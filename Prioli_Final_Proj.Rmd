@@ -1,0 +1,204 @@
+---
+title: "Quality of Life by Country:  A Clustering Analysis"
+author: "Katherine M. Prioli"
+date: "December 22, 2018"
+output:
+  pdf_document: default
+  html_document: default
+geometry: margin = 0.5in
+---
+
+## **Background**
+
+
+
+## **Methods**
+
+
+### *Loading libraries*
+
+```{r setup, include = TRUE, warning = FALSE, results = 'hide', echo = TRUE, message = FALSE}
+library(tidyverse)
+library(readxl)          # For importing .xls(x) datasets
+library(lazyeval)        # For renaming columns in function
+library(countrycode)     # For establishing uniform country identifiers
+library(ggthemr)         # For prettifying output
+
+ggthemr("fresh")
+```
+
+### *Importing and wrangling data*
+
+```{r import}
+
+#### Human Development Index data ----
+
+HDIraw <- read_xlsx("data/HDIdata.xlsx")
+HDIraw
+
+HDIdata <- HDIraw %>% 
+  select(-X__3, -X__5, -X__7, -X__9, -X__11, -X__13)
+
+HDIcolnm <- c(HDIdata[[3,1]], HDIdata[[3,2]], HDIdata[[2,3]], HDIdata[[2,4]], HDIdata[[2,5]], HDIdata[[2,6]], 
+              HDIdata[[2,7]], HDIdata[[2,8]], paste0(HDIdata[[2,9]], "_2016"))
+colnames(HDIdata) <- HDIcolnm
+
+vhhd_st <- which(HDIdata$Country == "VERY HIGH HUMAN DEVELOPMENT") + 1
+vhhd_end <- which(HDIdata$Country == "HIGH HUMAN DEVELOPMENT") - 1
+
+hhd_st <- which(HDIdata$Country == "HIGH HUMAN DEVELOPMENT") + 1
+hhd_end <- which(HDIdata$Country == "MEDIUM HUMAN DEVELOPMENT") - 1
+
+mhd_st <- which(HDIdata$Country == "MEDIUM HUMAN DEVELOPMENT") + 1
+mhd_end <- which(HDIdata$Country == "LOW HUMAN DEVELOPMENT") - 1
+
+lhd_st <- which(HDIdata$Country == "LOW HUMAN DEVELOPMENT") + 1
+lhd_end <- which(HDIdata$Country == "OTHER COUNTRIES OR TERRITORIES") - 1
+
+oth_st <- which(HDIdata$Country == "OTHER COUNTRIES OR TERRITORIES") + 1
+oth_end <- which(HDIdata$Country == "Human development groups") - 2
+
+HDI_vhhd <- HDIdata %>% 
+  slice(vhhd_st:vhhd_end) %>% 
+  mutate(HDI_cat = "Very high")
+
+HDI_hhd <- HDIdata %>% 
+  slice(hhd_st:hhd_end) %>% 
+  mutate(HDI_cat = "High")
+
+HDI_mhd <- HDIdata %>% 
+  slice(mhd_st:mhd_end) %>% 
+  mutate(HDI_cat = "Medium")
+
+HDI_lhd <- HDIdata %>% 
+  slice(lhd_st:lhd_end) %>% 
+  mutate(HDI_cat = "Low")
+
+HDI_oth <- HDIdata %>% 
+  slice(oth_st:oth_end) %>% 
+  mutate(HDI_cat = NA)
+
+HDIdata <- bind_rows(HDI_vhhd, HDI_hhd, HDI_mhd, HDI_lhd, HDI_oth) %>% 
+  rename(HDIrank_2017 = `HDI rank`) %>% 
+  rename(countrylong = Country) %>% 
+  rename(HDIindex = `Human Development Index (HDI)`) %>% 
+  rename(HDI_lifexp = `Life expectancy at birth`) %>% 
+  rename(HDI_expyrschool = `Expected years of schooling`) %>% 
+  rename(HDI_meanyrschool = `Mean years of schooling`) %>% 
+  rename(HDI_GNI = `Gross national income (GNI) per capita`) %>% 
+  rename(HDI_GNI_rank = `GNI per capita rank minus HDI rank`) %>%
+  rename(HDIrank_2016 = `HDI rank_2016`)
+
+# Creating a data dictionary
+
+HDI_var <- colnames(HDIdata)
+HDI_desc <- c(HDIcolnm, "HDI category")
+HDI_yr <- c(2017, NA, rep(2017,6),2016, 2017)
+HDI_dict <- as.tibble(cbind(HDI_var, HDI_desc, HDI_yr))
+colnames(HDI_dict) <- c("HDI_variable_name", "HDI_variable_description", "HDI_variable_year")
+
+
+#### Importing and wrangling OECD data via function ----
+
+OECD_wrangle <- function(df, stem){
+  stemdata <- df %>% 
+  select(LOCATION, TIME, Value) %>%
+  rename(country3 = LOCATION) %>%
+  rename(year = TIME) %>%
+  rename(!!stem := Value) %>%         # Tidy eval syntax - use !! to unquote LHS, then := substitute assignment operator
+  group_by(country3) %>%
+  mutate(maxyr = max(year)) %>%
+  ungroup() %>%
+  mutate(!!paste0(stem, "_maxyr") := case_when(
+    year == maxyr ~ 1,
+    TRUE ~ 0
+  )) %>%
+  select(-maxyr)
+  
+  stemout <- return(stemdata)
+}
+
+# For data dictionaries
+
+OECD_dict <- function(df, stem, stemvar, stemdesc, stemdict){
+  stemvar <- colnames(df)
+  stemdesc <- c("Three-character country code", "Year", paste0(stem, " value"), "Most recent year flag")
+  stemdict <- as.tibble(cbind(stemvar, stemdesc))
+  colnames(stemdict) <- c(paste0(stem, "_variable_name"), paste0(stem, "_variable_description"))
+  
+  dictout <- return(stemdict)
+}
+
+hoursworkedraw <- read_csv("data/OECD_hoursworked.csv")
+incomeineqraw <- read_csv("data/OECD_incomeineq.csv")
+infantmortraw <- read_csv("data/OECD_infantmortality.csv")
+oophcspendraw <- read_csv("data/OECD_oophcspend.csv")
+tertiaryedraw <- read_csv("data/OECD_tertiaryed.csv")
+
+hoursworkeddata <- OECD_wrangle(hoursworkedraw, "hoursworked")
+hoursworked_dict <- OECD_dict(hoursworkeddata, "hoursworked", "hoursworked_var", "hoursworked_desc", "hoursworked_dict")
+
+incomeineqdata <- OECD_wrangle(incomeineqraw, "incomeineq")
+incomeineq_dict <- OECD_dict(incomeineqdata, "incomeineq", "incomeineq_var", "incomeineq_desc", "incomeineq_dict")
+
+infantmortdata <- OECD_wrangle(infantmortraw, "infantmort")
+infantmort_dict <- OECD_dict(infantmortdata, "infantmort", "infantmort_var", "infantmort_desc", "infantmort_dict")
+
+oophcspenddata <- OECD_wrangle(oophcspendraw, "oophcspend")
+oophcspend_dict <- OECD_dict(oophcspenddata, "oophcspend", "oophcspend_var", "oophcspend_desc", "oophcspend_dict")
+
+tertiaryeddata <- OECD_wrangle(tertiaryedraw, "tertiaryed")
+tertiaryed_dict <- OECD_dict(tertiaryeddata, "tertiaryed", "tertiaryed_var", "tertiaryed_desc", "tertiaryed_dict")
+
+OECDjoin <- full_join(hoursworkeddata, incomeineqdata, by = c("country3", "year"))
+OECDjoin <- full_join(OECDjoin, infantmortdata, by = c("country3", "year"))
+OECDjoin <- full_join(OECDjoin, oophcspenddata, by = c("country3", "year"))
+OECDjoin <- full_join(OECDjoin, tertiaryeddata, by = c("country3", "year"))
+
+
+### Establishing a crosswalk for country names and 3-letter codes
+
+countries <- codelist_panel %>% 
+  select(country.name.en, year, genc3c, iso3c, wb_api3c) %>% 
+  group_by(country.name.en) %>% 
+  mutate(maxyr = max(year)) %>% 
+  ungroup %>% 
+  mutate(maxyr = case_when(
+    maxyr == year ~ 1,
+    TRUE ~ 0
+  )) %>% 
+  filter(maxyr == 1) %>% 
+  select(-maxyr) %>% 
+  distinct()
+
+sum(is.na(countries$genc3c))
+sum(is.na(countries$iso3c))
+sum(is.na(countries$wb_api3c))
+
+countries <- countries %>% 
+  mutate(country3 = case_when(
+    iso3c == genc3c & iso3c == wb_api3c ~ iso3c,
+    is.na(iso3c) == FALSE ~ iso3c,
+    is.na(iso3c) == TRUE & is.na(genc3c) == FALSE ~ genc3c,
+    is.na(iso3c) == TRUE & is.na(genc3c) == TRUE & is.na(wb_api3c) == FALSE ~ wb_api3c
+  ))
+```
+
+
+
+## **Results**
+
+
+## **Discussion**
+
+
+
+### *Limitations*
+
+
+
+## **Conclusion**
+
+
+
+## **References**
