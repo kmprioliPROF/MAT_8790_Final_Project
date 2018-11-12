@@ -97,6 +97,38 @@ HDI_yr <- c(2017, NA, rep(2017,6),2016, 2017)
 HDI_dict <- as.tibble(cbind(HDI_var, HDI_desc, HDI_yr))
 colnames(HDI_dict) <- c("HDI_variable_name", "HDI_variable_description", "HDI_variable_year")
 
+#### Social Progress Index ----
+
+SPI_2017_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 3)
+SPI_2016_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 4)
+SPI_2015_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 5)
+SPI_2014_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 6)
+
+SPI_2017_data <- SPI_2017_raw %>% 
+  select(2:3) %>% 
+  rename(`2017` = `Social Progress Index`,
+         iso3c = Code)
+
+SPI_2016_data <- SPI_2016_raw %>% 
+  select(2:3) %>% 
+  rename(`2016` = `Social Progress Index`,
+         iso3c = Code)
+
+SPI_2015_data <- SPI_2015_raw %>% 
+  select(2:3) %>% 
+  rename(`2015` = `Social Progress Index`,
+         iso3c = Code)
+
+SPI_2014_data <- SPI_2014_raw %>% 
+  select(2:3) %>% 
+  rename(`2014` = `Social Progress Index`,
+         iso3c = Code)
+
+SPI_join <- full_join(SPI_2017_data, SPI_2016_data, by = "iso3c")
+SPI_join <- full_join(SPI_join, SPI_2015_data, by = "iso3c")
+SPI_join <- full_join(SPI_join, SPI_2014_data, by = "iso3c")
+SPIdata <- SPI_join %>% gather(`2014`, `2015`, `2016`, `2017`, key = "year", value = "SPI")
+
 
 #### Importing and wrangling OECD data via function ----
 
@@ -155,6 +187,9 @@ OECDjoin <- full_join(OECDjoin, infantmortdata, by = c("country3", "year"))
 OECDjoin <- full_join(OECDjoin, oophcspenddata, by = c("country3", "year"))
 OECDjoin <- full_join(OECDjoin, tertiaryeddata, by = c("country3", "year"))
 
+#### NEED TO DO:  Flesh out list of temp objects to remove
+# rm(list = c(hoursworkedraw, hoursworkeddata, incomeineqraw, incomeineqdata, infantmortraw,
+#             infantmortdata, oophcspendraw, oophcspenddata, tertiaryedraw, tertiaryeddata))
 
 ### Establishing a crosswalk for country names and 3-letter codes
 
