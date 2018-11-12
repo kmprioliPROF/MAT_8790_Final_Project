@@ -97,7 +97,11 @@ HDI_yr <- c(2017, NA, rep(2017,6),2016, 2017)
 HDI_dict <- as.tibble(cbind(HDI_var, HDI_desc, HDI_yr))
 colnames(HDI_dict) <- c("HDI_variable_name", "HDI_variable_description", "HDI_variable_year")
 
-#### Social Progress Index ----
+# Cleaning up unneeded files
+
+rm(list = c(HDIraw, HDIcolnm, HDI_vhhd, HDI_hhd, HDI_mhd, HDI_lhd, HDI_oth))
+
+#### Social Progress Index data ----
 
 SPI_2017_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 3)
 SPI_2016_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 4)
@@ -129,6 +133,18 @@ SPI_join <- full_join(SPI_join, SPI_2015_data, by = "iso3c")
 SPI_join <- full_join(SPI_join, SPI_2014_data, by = "iso3c")
 SPIdata <- SPI_join %>% gather(`2014`, `2015`, `2016`, `2017`, key = "year", value = "SPI")
 
+# Cleaning up unneeded files
+
+rm(list = c(SPI_2017_raw, SPI_2017_data, SPI_2016_raw, SPI_2016_data, SPI_2015_raw, SPI_2015_data, 
+   SPI_2014_raw, SPI_2014_data, SPI_join))
+
+#### World Happiness Score data ----
+
+WHR_raw <- read_xls("data/WHRdata.xls", sheet = 1)
+WHRdata <- WHR_raw %>% 
+  select(1:3) %>% 
+  rename(happiness = `Life Ladder`)
+rm(WHR_raw)
 
 #### Importing and wrangling OECD data via function ----
 
@@ -185,13 +201,14 @@ tertiaryed_dict <- OECD_dict(tertiaryeddata, "tertiaryed", "tertiaryed_var", "te
 OECDjoin <- full_join(hoursworkeddata, incomeineqdata, by = c("country3", "year"))
 OECDjoin <- full_join(OECDjoin, infantmortdata, by = c("country3", "year"))
 OECDjoin <- full_join(OECDjoin, oophcspenddata, by = c("country3", "year"))
-OECDjoin <- full_join(OECDjoin, tertiaryeddata, by = c("country3", "year"))
+OECDdata <- full_join(OECDjoin, tertiaryeddata, by = c("country3", "year"))
 
-#### NEED TO DO:  Flesh out list of temp objects to remove
-# rm(list = c(hoursworkedraw, hoursworkeddata, incomeineqraw, incomeineqdata, infantmortraw,
-#             infantmortdata, oophcspendraw, oophcspenddata, tertiaryedraw, tertiaryeddata))
+# Cleaning up unneeded files
 
-### Establishing a crosswalk for country names and 3-letter codes
+rm(list = c(hoursworkedraw, hoursworkeddata, incomeineqraw, incomeineqdata, infantmortraw,
+            infantmortdata, oophcspendraw, oophcspenddata, tertiaryedraw, tertiaryeddata, OECDjoin))
+
+#### Establishing a crosswalk for country names and 3-letter codes ----
 
 countries <- codelist_panel %>% 
   select(country.name.en, year, genc3c, iso3c, wb_api3c) %>% 
