@@ -146,6 +146,22 @@ WHRdata <- WHR_raw %>%
   rename(happiness = `Life Ladder`)
 rm(WHR_raw)
 
+
+#### World Economic Forum Gender Equality Indices data ----
+
+gender_raw <- read_xlsx("data/WEF_gender.xlsx", sheet = 2, range = "$A$2:$K$147")
+gender_raw <- gender_raw %>% 
+  select(1:2, 4, 6, 8, 10)
+colnames(gender_raw) <- c("country", "overall_index", "econ_subindex", "educ_subindex", "health_subindex", "polit_subindex")
+genderdata <- gender_raw %>% 
+  slice(2:dim(gender_raw)[1]) %>% 
+  mutate(year = 2016)
+
+# Cleaning up unneeded files
+rm(gender_raw)
+
+#View(gender_raw)
+
 #### Importing and wrangling OECD data via function ----
 
 OECD_wrangle <- function(df, stem){
