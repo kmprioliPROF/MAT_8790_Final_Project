@@ -27,12 +27,40 @@ library(ggthemr)         # For prettifying output
 ggthemr("fresh")
 ```
 
-### *Importing and wrangling each data file*
+### **Establishing a crosswalk for country names and 3-letter codes**
 
-```{r import, include = FALSE, echo = TRUE}
+```{r countries, include = FALSE, echo = TRUE}
+countries_full <- codelist_panel %>% 
+  select(country.name.en, year, genc3c, iso3c, wb_api3c) %>% 
+  group_by(country.name.en) %>% 
+  mutate(maxyr = max(year)) %>% 
+  ungroup %>% 
+  mutate(maxyr = case_when(
+    maxyr == year ~ 1,
+    TRUE ~ 0
+  )) %>% 
+  filter(maxyr == 1) %>% 
+  select(-maxyr) %>% 
+  distinct()
 
-#### Human Development Index data ----
+countries_full <- countries_full %>% 
+  mutate(country3 = case_when(
+    iso3c == genc3c & iso3c == wb_api3c ~ iso3c,
+    is.na(iso3c) == FALSE ~ iso3c,
+    is.na(iso3c) == TRUE & is.na(genc3c) == FALSE ~ genc3c,
+    is.na(iso3c) == TRUE & is.na(genc3c) == TRUE & is.na(wb_api3c) == FALSE ~ wb_api3c
+  )) %>% 
+  rename(country = country.name.en)
 
+countries <- countries_full %>% 
+  select(country, country3)
+```
+
+### **Importing and wrangling each data file**
+
+Human Development Index (HDI) data:
+
+```{r HDI_import, include = FALSE, echo = TRUE}
 HDIraw <- read_xlsx("data/HDIdata.xlsx")
 HDIraw
 
@@ -104,15 +132,66 @@ HDI_yr <- c(NA, rep(2017, 8), 2016)
 HDI_dict <- as.tibble(cbind(HDI_var, HDI_desc, HDI_yr))
 colnames(HDI_dict) <- c("HDI_variable_name", "HDI_variable_description", "HDI_variable_year")
 HDI_dict <- HDI_dict %>% slice(-10)
+```
+
+Using `anti_join()` to see which countries in `HDIdata` don't have a match in the `countries` dataframe, and correcting those for which an inexact match exists:
+
+```{r HDI_countrytest, include = TRUE, echo = TRUE}
+HDIanti <- HDIdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country)
+dim(HDIanti)
+
+HDIdata <- HDIdata %>%
+  mutate(country = case_when(
+    country == "Antigua and Barbuda"                       ~ "Antigua & Barbuda",
+    country == "Bolivia (Plurinational State of)"          ~ "Bolivia",
+    country == "Bosnia and Herzegovina"                    ~ "Bosnia & Herzegovina",
+    country == "Brunei Darussalam"                         ~ "Brunei",
+    country == "Cabo Verde"                                ~ "Cape Verde",
+    country == "Congo"                                     ~ "Congo - Brazzaville",
+    country == "Congo (Democratic Republic of the)"        ~ "Congo - Kinshasa",
+    country == "Eswatini (Kingdom of)"                     ~ "Swaziland",
+    country == "Hong Kong, China (SAR)"                    ~ "Hong Kong SAR China",
+    country == "Iran (Islamic Republic of)"                ~ "Iran",
+    country == "Korea (Democratic People's Rep. of)"       ~ "North Korea",
+    country == "Korea (Republic of)"                       ~ "South Korea",
+    country == "Lao People's Democratic Republic"          ~ "Laos",
+    country == "Moldova (Republic of)"                     ~ "Moldova",
+    country == "Myanmar"                                   ~ "Myanmar (Burma)",
+    country == "Palestine, State of"                       ~ "Palestinian Territories",
+    country == "Russian Federation"                        ~ "Russia",
+    country == "Saint Kitts and Nevis"                     ~ "St. Kitts & Nevis",
+    country == "Saint Lucia"                               ~ "St. Lucia",
+    country == "Saint Vincent and the Grenadines"          ~ "St. Vincent & Grenadines",
+    country == "Syrian Arab Republic"                      ~ "Syria",
+    country == "Tanzania (United Republic of)"             ~ "Tanzania",
+    country == "The former Yugoslav Republic of Macedonia" ~ "Macedonia",
+    country == "Trinidad and Tobago"                       ~ "Trinidad & Tobago",
+    country == "Venezuela (Bolivarian Republic of)"        ~ "Venezuela",
+    country == "Viet Nam"                                  ~ "Vietnam",
+    country == "Côte d'Ivoire"                             ~ as.character(NA),   # UTC-8 conflicts;
+    country == "Sao Tome and Principe"                     ~ as.character(NA),   # need to resolve
+    TRUE                                                   ~ as.character(country)
+  )) %>% 
+  filter(!is.na(country))
+
+HDIanti <- HDIdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country)
+dim(HDIanti)
 
 # Removing unneeded files
 
 rm(list = c("HDIraw", "HDIcolnm", "HDI_vhhd", "HDI_hhd", "HDI_mhd", "HDI_lhd", "HDI_oth", "HDI_var",
-            "HDI_desc", "HDI_yr"))
+            "HDI_desc", "HDI_yr", "HDIanti"))
+```
 
+Social Progress Index (SPI) data:
 
-#### Social Progress Index data ----
-
+```{r SDI_import, include = FALSE, echo = TRUE}
 SPI_2017_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 3)
 SPI_2016_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 4)
 SPI_2015_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 5)
@@ -149,16 +228,47 @@ SPIdata <- SPI_join %>%
     is.na(SPI_maxyr) == TRUE ~ as.double(TRUE),
     SPI_maxyr == year ~ 1,
     SPI_maxyr != year ~ 0
-  ))
+  )) %>% 
+  ungroup()
+```
+
+Testing against `countries` and renaming to correct for conflicts:
+
+```{r SPI_countrytest, include = TRUE, echo = TRUE}
+SPIanti <- SPIdata %>%
+  anti_join(countries, by = "country3") %>%
+  select(country3) %>%
+  arrange(country3) %>% 
+  unique()
+dim(SPIanti)
+
+SPIdata <- SPIdata %>%
+  mutate(country3 = case_when(
+    country3 == "CHI" ~ as.character(NA), # Nonstandard code for Chile; omitting (no data in these rows)
+    country3 == "KSV" ~ "XKS",            # Nonstandard code for Kosovo
+    country3 == "NCY" ~ as.character(NA), # Turk. Repub. of N. Cyprus; omitting (conflict w/Cyprus)
+    country3 == "SML" ~ as.character(NA), # Unable to determine
+    country3 == "WBG" ~ as.character(NA), # West Bank / Gaza Strip; omitting (conflict w/Palestine)
+    TRUE ~ as.character(country3)
+  )) %>% 
+  filter(!is.na(country3))
+
+SPIanti <- SPIdata %>%
+  anti_join(countries, by = "country3") %>%
+  select(country3) %>%
+  arrange(country3) %>% 
+  unique()
+dim(SPIanti)
 
 # Removing unneeded files
 
 rm(list = c("SPI_2017_raw", "SPI_2017_data", "SPI_2016_raw", "SPI_2016_data", "SPI_2015_raw", "SPI_2015_data", 
-   "SPI_2014_raw", "SPI_2014_data", "SPI_join"))
+   "SPI_2014_raw", "SPI_2014_data", "SPI_join", "SPIanti"))
+```
 
+World Happiness Score data:
 
-#### World Happiness Score data ----
-
+```{r WHRdata_import, include = FALSE, echo = TRUE}
 WHR_raw <- read_xls("data/WHRdata.xls", sheet = 1)
 WHRdata <- WHR_raw %>% 
   select(1:3) %>% 
@@ -169,12 +279,52 @@ WHRdata <- WHR_raw %>%
     is.na(WHR_maxyr) == TRUE ~ as.double(TRUE),
     WHR_maxyr == year ~ 1,
     WHR_maxyr != year ~ 0
-  ))
-rm(WHR_raw)
+  )) %>% 
+  ungroup()
+```
 
+Testing against `countries` and correcting for conflicts:
 
-#### World Economic Forum Gender Equality Indices data ----
+```{r WHR_countrytest, include = TRUE, echo = TRUE}
+WHRanti <- WHRdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country) %>% 
+  unique()
+dim(WHRanti)
 
+WHRdata <- WHRdata %>% 
+  mutate(country = case_when(
+    country == "Bosnia and Herzegovina"                    ~ "Bosnia & Herzegovina",
+    country == "Congo (Brazzaville)"                       ~ "Congo - Brazzaville",
+    country == "Congo (Kinshasa)"                          ~ "Congo - Kinshasa",
+    country == "Czech Republic"                            ~ "Czechia",
+    country == "Hong Kong S.A.R. of China"                 ~ "Hong Kong SAR China",
+    country == "Myanmar"                                   ~ "Myanmar (Burma)",
+    country == "Taiwan Province of China"                  ~ "Taiwan",
+    country == "Trinidad and Tobago"                       ~ "Trinidad & Tobago",
+    country == "North Cyprus"                              ~ as.character(NA),   # conflicts w/Cyprus
+    country == "Somaliland region"                         ~ as.character(NA),   # conflicts w/Somalia
+    country == "Ivory Coast"                               ~ as.character(NA),   # UTC-8 conflicts;
+    TRUE                                                   ~ as.character(country)
+  )) %>% 
+  filter(!is.na(country))
+
+WHRanti <- WHRdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country) %>% 
+  unique()
+dim(WHRanti)
+
+# Removing unneeded files
+
+rm(list = c("WHR_raw", "WHRanti"))
+```
+
+World Economic Forum Gender Equality Index data:
+
+```{r gender_import, include = FALSE, echo = TRUE}
 gender_raw <- read_xlsx("data/WEF_gender.xlsx", sheet = 2, range = "$A$2:$K$147")
 gender_raw <- gender_raw %>% 
   select(1:2, 4, 6, 8, 10)
@@ -183,11 +333,52 @@ genderdata <- gender_raw %>%
   slice(2:dim(gender_raw)[1]) %>% 
   mutate(year = 2016) %>% 
   mutate(gender_maxyr = 1)
-rm(gender_raw)
+```
 
+Testing against `countries` and correcting for conflicts:
 
-#### World Health Organization life expectancy data ----
+```{r gender_countrytest, include = TRUE, echo = TRUE}
+genderanti <- genderdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country) %>% 
+  unique()
+dim(genderanti)
 
+genderdata <- genderdata %>%
+  mutate(country = case_when(
+    country == "Bosnia and Herzegovina"                    ~ "Bosnia & Herzegovina",
+    country == "Brunei Darussalam"                         ~ "Brunei",
+    country == "Czech Republic"                            ~ "Czechia",
+    country == "Gambia, The"                               ~ "Gambia",
+    country == "Iran, Islamic Rep."                        ~ "Iran",
+    country == "Korea, Rep."                               ~ "South Korea",
+    country == "Kyrgyz Republic"                           ~ "Kyrgyzstan",
+    country == "Lao PDR"                                   ~ "Laos",
+    country == "Macedonia, FYR"                            ~ "Macedonia",
+    country == "Russian Federation"                        ~ "Russia",
+    country == "Slovak Republic"                           ~ "Slovakia",
+    country == "Trinidad and Tobago"                       ~ "Trinidad & Tobago",
+    country == "Côte d'Ivoire"                             ~ as.character(NA),   # UTC-8 conflict
+    TRUE                                                   ~ as.character(country)
+  )) %>% 
+  filter(!is.na(country))
+
+genderanti <- genderdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country) %>% 
+  unique()
+dim(genderanti)
+
+# Removing unneeded files
+
+rm(list = c("gender_raw", "genderanti"))
+```
+
+World Health Organization life expectancy data:
+
+```{r lifeexp_import, include = FALSE, echo = TRUE}
 lifeexp_raw <- read_csv("data/WHO_lifeexp.csv")
 lifeexp_raw <- lifeexp_raw %>% select(1:8)
 
@@ -224,21 +415,71 @@ lifeexp_dict <- lifeexp_dict %>%
   mutate(lifeexp_variable_description = paste0(attr, ", ", desc)) %>% 
   select(lifeexp_variable_description)
 lifeexp_dict <- bind_cols(lifeexp_colnames, lifeexp_dict)
+```
+
+Testing against `countries` and correcting for conflicts:
+
+```{r lifeexp_countrytest, include = TRUE, echo = TRUE}
+lifeexpanti <- lifeexpdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country) %>% 
+  unique()
+dim(lifeexpanti)
+
+lifeexpdata <- lifeexpdata %>% 
+  mutate(country = case_when(
+    country == "Antigua and Barbuda"                                  ~ "Antigua & Barbuda",
+    country == "Bolivia (Plurinational State of)"                     ~ "Bolivia",
+    country == "Bosnia and Herzegovina"                               ~ "Bosnia & Herzegovina",
+    country == "Brunei Darussalam"                                    ~ "Brunei",
+    country == "Cabo Verde"                                           ~ "Cape Verde",
+    country == "Congo"                                                ~ "Congo - Brazzaville",
+    country == "Democratic People's Republic of Korea"                ~ "North Korea",
+    country == "Democratic Republic of the Congo"                     ~ "Congo - Kinshasa",
+    country == "Eswatini"                                             ~ "Swaziland",
+    country == "Iran (Islamic Republic of)"                           ~ "Iran",
+    country == "Lao People's Democratic Republic"                     ~ "Laos",
+    country == "Myanmar"                                              ~ "Myanmar (Burma)",
+    country == "Republic of Korea"                                    ~ "South Korea",
+    country == "Republic of Moldova"                                  ~ "Moldova",
+    country == "Russian Federation"                                   ~ "Russia",
+    country == "Saint Lucia"                                          ~ "St. Lucia",
+    country == "Saint Vincent and the Grenadines"                     ~ "St. Vincent & Grenadines",
+    country == "Syrian Arab Republic"                                 ~ "Syria",
+    country == "The former Yugoslav republic of Macedonia"            ~ "Macedonia",
+    country == "Trinidad and Tobago"                                  ~ "Trinidad & Tobago",
+    country == "United Kingdom of Great Britain and Northern Ireland" ~ "United Kingdom",
+    country == "United Republic of Tanzania"                          ~ "Tanzania",
+    country == "United States of America"                             ~ "United States",
+    country == "Venezuela (Bolivarian Republic of)"                   ~ "Venezuela",
+    country == "Viet Nam"                                             ~ "Vietnam",
+    country == "Côte d'Ivoire"                                        ~ as.character(NA),   # UTC-8 conflicts;
+    country == "Sao Tome and Principe"                                ~ as.character(NA),   # need to resolve
+    TRUE                                                              ~ as.character(country)
+  )) %>% 
+  filter(!is.na(country))
+
+lifeexpanti <- lifeexpdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country) %>% 
+  unique()
+dim(lifeexpanti)
 
 # Removing unneeded files
 
 rm(list = c("lifeexp_raw", "lifeexp_sub", "lifeexp_desc", "lifeexp_attr", "lifeexp_colnames"))
+```
 
+World Bank Gross Domestic Product (GDP) data:
 
-#### World Bank GDP data
-
+```{r GDP_import, include = FALSE, echo = TRUE, message = FALSE, warning = FALSE}
 GDPraw <- read_csv("data/GDPdata.csv")
 
 GDPcolnames <- GDPraw %>% slice(4:4)
-
 GDPsub <- GDPraw %>% 
   slice(-(1:4))
-
 colnames(GDPsub) <- GDPcolnames
 
 GDPdata <- GDPsub %>% 
@@ -254,14 +495,47 @@ GDPdata <- GDPsub %>%
     GDP_maxyr != year ~ 0
   )) %>% 
   ungroup()
+```
+
+Testing against `countries` and correcting for conflicts:
+
+```{r GDP_countrytest, include = TRUE, echo = TRUE}
+GDPanti <- GDPdata %>%
+  anti_join(countries, by = "country3") %>%
+  select(country3, country) %>%
+  arrange(country3, country) %>% 
+  unique()
+dim(GDPanti)
+
+GDPdata <- GDPdata %>% 
+  mutate(country3 = case_when(
+    country3 == "XKX" ~ "XKS",
+    country3 == "CHI" ~ as.character(NA), # Channel Islands
+    country3 %in% c("ARB", "CEB", "CSS", "EAP", "EAR", "EAS", "ECA", "ECS", "EMU",  # Region-of-world codes
+                    "EUU", "FCS", "HIC", "HPC", "IBD", "IBT", "IDA", "IDB", "IDX",  # (not country codes)
+                    "INX", "LAC", "LCN", "LDC", "LIC", "LMC", "LMY", "LTE", "MEA", 
+                    "MIC", "MNA", "NAC", "OED", "OSS", "PRE", "PSS", "PST", "SAS", 
+                    "SSA", "SSF", "SST", "TEA", "TEC", "TLA", "TMN", "TSA", "TSS", 
+                    "UMC", "WLD") ~ as.character(NA),
+    TRUE ~ as.character(country3)
+  )) %>% 
+  filter(!is.na(country3))
+
+GDPanti <- GDPdata %>%
+  anti_join(countries, by = "country3") %>%
+  select(country3, country) %>%
+  arrange(country3, country) %>% 
+  unique()
+dim(GDPanti)
 
 # Removing unneeded files
 
-rm(list = c("GDPraw", "GDPsub", "GDPcolnames"))
+rm(list = c("GDPraw", "GDPsub", "GDPcolnames", "GDPanti"))
+```
 
+Since several of the datasets of interest come from OECD, a function was written to import and wrangle them.
 
-#### Importing and wrangling OECD data via function ----
-
+```{r OECD_import, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
 OECD_wrangle <- function(df, stem){
   stemdata <- df %>% 
   select(LOCATION, TIME, Value) %>%
@@ -316,43 +590,42 @@ OECDjoin <- full_join(hoursworkeddata, incomeineqdata, by = c("country3", "year"
 OECDjoin <- full_join(OECDjoin, infantmortdata, by = c("country3", "year"))
 OECDjoin <- full_join(OECDjoin, oophcspenddata, by = c("country3", "year"))
 OECDdata <- full_join(OECDjoin, tertiaryeddata, by = c("country3", "year"))
+```
+
+Testing against `countries` and correcting for conflicts:
+
+```{r OECD_countrytest, include = TRUE, echo = TRUE}
+OECDanti <- OECDdata %>%
+  anti_join(countries, by = "country3") %>%
+  select(country3) %>%
+  arrange(country3) %>% 
+  unique()
+dim(OECDanti)
+
+OECDdata <- OECDdata %>% 
+  filter(country3 != "OAVG" & country3 != "OECD")     # Omitting non-country codes
+
+OECDanti <- OECDdata %>%
+  anti_join(countries, by = "country3") %>%
+  select(country3) %>%
+  arrange(country3) %>% 
+  unique()
+dim(OECDanti)
 
 # Removing unneeded files
 
 rm(list = c("hoursworkedraw", "hoursworkeddata", "incomeineqraw", "incomeineqdata", "infantmortraw",
-            "infantmortdata", "oophcspendraw", "oophcspenddata", "tertiaryedraw", "tertiaryeddata", "OECDjoin"))
+            "infantmortdata", "oophcspendraw", "oophcspenddata", "tertiaryedraw", "tertiaryeddata", 
+            "OECDjoin", "OECDanti"))
 ```
+
+
 
 ### **Combining individual data files into one dataframe**
 
 ```{r combine, include = FALSE, echo = TRUE}
 
-#### Establishing a crosswalk for country names and 3-letter codes ----
 
-countries <- codelist_panel %>% 
-  select(country.name.en, year, genc3c, iso3c, wb_api3c) %>% 
-  group_by(country.name.en) %>% 
-  mutate(maxyr = max(year)) %>% 
-  ungroup %>% 
-  mutate(maxyr = case_when(
-    maxyr == year ~ 1,
-    TRUE ~ 0
-  )) %>% 
-  filter(maxyr == 1) %>% 
-  select(-maxyr) %>% 
-  distinct()
-
-sum(is.na(countries$genc3c))
-sum(is.na(countries$iso3c))
-sum(is.na(countries$wb_api3c))
-
-countries <- countries %>% 
-  mutate(country3 = case_when(
-    iso3c == genc3c & iso3c == wb_api3c ~ iso3c,
-    is.na(iso3c) == FALSE ~ iso3c,
-    is.na(iso3c) == TRUE & is.na(genc3c) == FALSE ~ genc3c,
-    is.na(iso3c) == TRUE & is.na(genc3c) == TRUE & is.na(wb_api3c) == FALSE ~ wb_api3c
-  ))
 ```
 
 
