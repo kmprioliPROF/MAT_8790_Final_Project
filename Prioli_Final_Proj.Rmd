@@ -14,6 +14,12 @@ geometry: margin = 0.5in
 
 ## **Methods**
 
+<!-- Notes
+  * Limited to 5 years (2013 - present; probably want to examine final dataset and exclude 2018 - mostly NA)
+  * May want to explain methods & show one example for each import/wrangle/test against countries, then hide code for the rest, indicating that full code is either in appendix or on github (will make report too long otherwise)
+  * Reconsider how much I need the data dictionaries and the "maxyr" columns
+  -->
+
 
 ### *Loading libraries*
 
@@ -50,7 +56,8 @@ countries_full <- countries_full %>%
     is.na(iso3c) == TRUE & is.na(genc3c) == FALSE ~ genc3c,
     is.na(iso3c) == TRUE & is.na(genc3c) == TRUE & is.na(wb_api3c) == FALSE ~ wb_api3c
   )) %>% 
-  rename(country = country.name.en)
+  rename(country = country.name.en) %>% 
+  arrange(country)
 
 countries <- countries_full %>% 
   select(country, country3)
@@ -222,6 +229,7 @@ SPI_join <- full_join(SPI_join, SPI_2015_data, by = "country3")
 SPI_join <- full_join(SPI_join, SPI_2014_data, by = "country3")
 SPIdata <- SPI_join %>% 
   gather(`2014`, `2015`, `2016`, `2017`, key = "year", value = "SPI") %>% 
+  mutate(year = as.numeric(year)) %>% 
   group_by(country3) %>% 
   mutate(SPI_maxyr = max(year)) %>% 
   mutate(SPI_maxyr = case_when(
@@ -273,6 +281,7 @@ WHR_raw <- read_xls("data/WHRdata.xls", sheet = 1)
 WHRdata <- WHR_raw %>% 
   select(1:3) %>% 
   rename(happiness = `Life Ladder`) %>% 
+  filter(year >= 2013) %>% 
   group_by(country) %>% 
   mutate(WHR_maxyr = max(year)) %>% 
   mutate(WHR_maxyr = case_when(
@@ -304,7 +313,6 @@ WHRdata <- WHRdata %>%
     country == "Taiwan Province of China"                  ~ "Taiwan",
     country == "Trinidad and Tobago"                       ~ "Trinidad & Tobago",
     country == "North Cyprus"                              ~ as.character(NA),   # conflicts w/Cyprus
-    country == "Somaliland region"                         ~ as.character(NA),   # conflicts w/Somalia
     country == "Ivory Coast"                               ~ as.character(NA),   # UTC-8 conflicts;
     TRUE                                                   ~ as.character(country)
   )) %>% 
@@ -388,6 +396,8 @@ colnames(lifeexp_sub) <- c("country", "year", "birth_MF", "birth_M",
                        "birth_F", "sixty_MF", "sixty_M", "sixty_F")
 lifeexpdata <- lifeexp_sub %>% 
   slice(2:length(country)) %>% 
+  mutate(year = as.numeric(year)) %>% 
+  filter(year >= 2013) %>% 
   group_by(country) %>% 
   mutate(lifeexp_maxyr = max(year)) %>% 
   mutate(lifeexp_maxyr = case_when(
@@ -487,6 +497,8 @@ GDPdata <- GDPsub %>%
   rename(country3 = `Country Code`) %>% 
   select(-(3:44)) %>%
   gather(3:20, key = "year", value = "GDP_USD_2018") %>%      # Valuation is in $US 2018
+  mutate(year = as.numeric(year)) %>% 
+  filter(year >= 2013) %>% 
   group_by(country, country3) %>% 
   mutate(GDP_maxyr = max(year)) %>% 
   mutate(GDP_maxyr = case_when(
@@ -519,12 +531,13 @@ GDPdata <- GDPdata %>%
                     "UMC", "WLD") ~ as.character(NA),
     TRUE ~ as.character(country3)
   )) %>% 
-  filter(!is.na(country3))
+  filter(!is.na(country3)) %>% 
+  select(-country)
 
 GDPanti <- GDPdata %>%
   anti_join(countries, by = "country3") %>%
-  select(country3, country) %>%
-  arrange(country3, country) %>% 
+  select(country3) %>%
+  arrange(country3) %>% 
   unique()
 dim(GDPanti)
 
@@ -619,13 +632,28 @@ rm(list = c("hoursworkedraw", "hoursworkeddata", "incomeineqraw", "incomeineqdat
             "OECDjoin", "OECDanti"))
 ```
 
-
-
 ### **Combining individual data files into one dataframe**
 
 ```{r combine, include = FALSE, echo = TRUE}
+# Creating a framework with one row for every country/year combination
 
+countriesjoin <- bind_rows(countries, countries, countries, countries, countries)
+countrylen <- dim(countries)[[1]]
+years <- as.tibble(rep(c(2013, 2014, 2015, 2016, 2017),
+                       c(rep(countrylen, 5))))
+colnames(years) <- "year"
+countriesjoin <- bind_cols(countriesjoin, years)
 
+# Joining datasets together
+
+joindata_1 <- left_join(countriesjoin, HDIdata, by = c("country", "year"))
+joindata_2 <- left_join(joindata_1, SPIdata, by = c("country3", "year"))
+joindata_3 <- left_join(joindata_2, WHRdata, by = c("country", "year"))
+joindata_4 <- left_join(joindata_3, genderdata, by = c("country", "year"))
+joindata_5 <- left_join(joindata_4, lifeexpdata, by = c("country", "year"))
+joindata_6 <- left_join(joindata_5, GDPdata, by = c("country3", "year"))
+joindata_7 <- left_join(joindata_6, OECDdata, by = c("country3", "year"))
+View(joindata_7)
 ```
 
 
