@@ -18,6 +18,7 @@ geometry: margin = 0.5in
   * Limited to 5 years (2013 - present; probably want to examine final dataset and exclude 2018 - mostly NA)
   * May want to explain methods & show one example for each import/wrangle/test against countries, then hide code for the rest, indicating that full code is either in appendix or on github (will make report too long otherwise)
   * Reconsider how much I need the data dictionaries and the "maxyr" columns
+     * Consider filtering individual datasets to maxyr == 1 before joining?
   -->
 
 
@@ -654,8 +655,20 @@ joindata_5 <- left_join(joindata_4, lifeexpdata, by = c("country", "year"))
 joindata_6 <- left_join(joindata_5, GDPdata, by = c("country3", "year"))
 joindata_7 <- left_join(joindata_6, OECDdata, by = c("country3", "year"))
 View(joindata_7)
+
+alldata <- joindata_7 %>% 
+  arrange(country, year)
+
+write_csv(alldata, "data/alldata.csv")
+
+# Next step - create a sensible subset of the data for analysis
 ```
 
+### **Univariate Visualizations**
+
+```{r univ}
+
+```
 
 
 ## **Results**
