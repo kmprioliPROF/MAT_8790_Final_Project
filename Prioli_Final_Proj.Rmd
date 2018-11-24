@@ -27,7 +27,7 @@ library(ggthemr)         # For prettifying output
 ggthemr("fresh")
 ```
 
-### *Importing and wrangling data*
+### *Importing and wrangling each data file*
 
 ```{r import, include = FALSE, echo = TRUE}
 
@@ -80,26 +80,35 @@ HDI_oth <- HDIdata %>%
 
 HDIdata <- bind_rows(HDI_vhhd, HDI_hhd, HDI_mhd, HDI_lhd, HDI_oth) %>% 
   rename(HDIrank_2017 = `HDI rank`) %>% 
-  rename(countrylong = Country) %>% 
+  rename(country = Country) %>% 
   rename(HDIindex = `Human Development Index (HDI)`) %>% 
   rename(HDI_lifexp = `Life expectancy at birth`) %>% 
   rename(HDI_expyrschool = `Expected years of schooling`) %>% 
   rename(HDI_meanyrschool = `Mean years of schooling`) %>% 
   rename(HDI_GNI = `Gross national income (GNI) per capita`) %>% 
   rename(HDI_GNI_rank = `GNI per capita rank minus HDI rank`) %>%
-  rename(HDIrank_2016 = `HDI rank_2016`)
+  rename(HDIrank_2016 = `HDI rank_2016`) %>% 
+  mutate(year = 2017) %>% 
+  mutate(HDI_maxyr = case_when(
+    year == 2017 ~ 1,
+    is.na(year) == TRUE ~ as.double(NA)
+  ))
+HDIdata <- HDIdata[c(2, 1, 3:8, 10:12, 9)] %>% select(-12)
 
 # Creating a data dictionary
 
 HDI_var <- colnames(HDIdata)
 HDI_desc <- c(HDIcolnm, "HDI category")
-HDI_yr <- c(2017, NA, rep(2017,6),2016, 2017)
+HDI_desc <- HDI_desc[c(2, 1, 3:8, 10, 9)]
+HDI_yr <- c(NA, rep(2017, 8), 2016)
 HDI_dict <- as.tibble(cbind(HDI_var, HDI_desc, HDI_yr))
 colnames(HDI_dict) <- c("HDI_variable_name", "HDI_variable_description", "HDI_variable_year")
+HDI_dict <- HDI_dict %>% slice(-10)
 
 # Removing unneeded files
 
-rm(list = c("HDIraw", "HDIcolnm", "HDI_vhhd", "HDI_hhd", "HDI_mhd", "HDI_lhd", "HDI_oth"))
+rm(list = c("HDIraw", "HDIcolnm", "HDI_vhhd", "HDI_hhd", "HDI_mhd", "HDI_lhd", "HDI_oth", "HDI_var",
+            "HDI_desc", "HDI_yr"))
 
 
 #### Social Progress Index data ----
@@ -112,27 +121,35 @@ SPI_2014_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 6)
 SPI_2017_data <- SPI_2017_raw %>% 
   select(2:3) %>% 
   rename(`2017` = `Social Progress Index`,
-         iso3c = Code)
+         country3 = Code)
 
 SPI_2016_data <- SPI_2016_raw %>% 
   select(2:3) %>% 
   rename(`2016` = `Social Progress Index`,
-         iso3c = Code)
+         country3 = Code)
 
 SPI_2015_data <- SPI_2015_raw %>% 
   select(2:3) %>% 
   rename(`2015` = `Social Progress Index`,
-         iso3c = Code)
+         country3 = Code)
 
 SPI_2014_data <- SPI_2014_raw %>% 
   select(2:3) %>% 
   rename(`2014` = `Social Progress Index`,
-         iso3c = Code)
+         country3 = Code)
 
-SPI_join <- full_join(SPI_2017_data, SPI_2016_data, by = "iso3c")
-SPI_join <- full_join(SPI_join, SPI_2015_data, by = "iso3c")
-SPI_join <- full_join(SPI_join, SPI_2014_data, by = "iso3c")
-SPIdata <- SPI_join %>% gather(`2014`, `2015`, `2016`, `2017`, key = "year", value = "SPI")
+SPI_join <- full_join(SPI_2017_data, SPI_2016_data, by = "country3")
+SPI_join <- full_join(SPI_join, SPI_2015_data, by = "country3")
+SPI_join <- full_join(SPI_join, SPI_2014_data, by = "country3")
+SPIdata <- SPI_join %>% 
+  gather(`2014`, `2015`, `2016`, `2017`, key = "year", value = "SPI") %>% 
+  group_by(country3) %>% 
+  mutate(SPI_maxyr = max(year)) %>% 
+  mutate(SPI_maxyr = case_when(
+    is.na(SPI_maxyr) == TRUE ~ as.double(TRUE),
+    SPI_maxyr == year ~ 1,
+    SPI_maxyr != year ~ 0
+  ))
 
 # Removing unneeded files
 
@@ -145,7 +162,14 @@ rm(list = c("SPI_2017_raw", "SPI_2017_data", "SPI_2016_raw", "SPI_2016_data", "S
 WHR_raw <- read_xls("data/WHRdata.xls", sheet = 1)
 WHRdata <- WHR_raw %>% 
   select(1:3) %>% 
-  rename(happiness = `Life Ladder`)
+  rename(happiness = `Life Ladder`) %>% 
+  group_by(country) %>% 
+  mutate(WHR_maxyr = max(year)) %>% 
+  mutate(WHR_maxyr = case_when(
+    is.na(WHR_maxyr) == TRUE ~ as.double(TRUE),
+    WHR_maxyr == year ~ 1,
+    WHR_maxyr != year ~ 0
+  ))
 rm(WHR_raw)
 
 
@@ -157,13 +181,9 @@ gender_raw <- gender_raw %>%
 colnames(gender_raw) <- c("country", "overall_index", "econ_subindex", "educ_subindex", "health_subindex", "polit_subindex")
 genderdata <- gender_raw %>% 
   slice(2:dim(gender_raw)[1]) %>% 
-  mutate(year = 2016)
-
-# Removing unneeded files
-
+  mutate(year = 2016) %>% 
+  mutate(gender_maxyr = 1)
 rm(gender_raw)
-
-#View(gender_raw)
 
 
 #### World Health Organization life expectancy data ----
@@ -178,10 +198,11 @@ colnames(lifeexp_sub) <- c("country", "year", "birth_MF", "birth_M",
 lifeexpdata <- lifeexp_sub %>% 
   slice(2:length(country)) %>% 
   group_by(country) %>% 
-  mutate(maxyr = max(year)) %>% 
-  mutate(maxyr = case_when(
-    year == maxyr ~ 1,
-    year != maxyr ~ 0
+  mutate(lifeexp_maxyr = max(year)) %>% 
+  mutate(lifeexp_maxyr = case_when(
+    is.na(lifeexp_maxyr) == TRUE ~ as.double(TRUE),
+    lifeexp_maxyr == year ~ 1,
+    lifeexp_maxyr != year ~ 0
   )) %>% 
   ungroup()
 
@@ -226,11 +247,11 @@ GDPdata <- GDPsub %>%
   select(-(3:44)) %>%
   gather(3:20, key = "year", value = "GDP_USD_2018") %>%      # Valuation is in $US 2018
   group_by(country, country3) %>% 
-  mutate(maxyr = max(year)) %>% 
-  mutate(maxyr = case_when(
-    is.na(maxyr) == TRUE ~ as.double(TRUE),
-    maxyr == year ~ 1,
-    maxyr != year ~ 0
+  mutate(GDP_maxyr = max(year)) %>% 
+  mutate(GDP_maxyr = case_when(
+    is.na(GDP_maxyr) == TRUE ~ as.double(TRUE),
+    GDP_maxyr == year ~ 1,
+    GDP_maxyr != year ~ 0
   )) %>% 
   ungroup()
 
@@ -300,7 +321,11 @@ OECDdata <- full_join(OECDjoin, tertiaryeddata, by = c("country3", "year"))
 
 rm(list = c("hoursworkedraw", "hoursworkeddata", "incomeineqraw", "incomeineqdata", "infantmortraw",
             "infantmortdata", "oophcspendraw", "oophcspenddata", "tertiaryedraw", "tertiaryeddata", "OECDjoin"))
+```
 
+### **Combining individual data files into one dataframe**
+
+```{r combine, include = FALSE, echo = TRUE}
 
 #### Establishing a crosswalk for country names and 3-letter codes ----
 
