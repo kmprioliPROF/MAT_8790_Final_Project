@@ -29,7 +29,7 @@ ggthemr("fresh")
 
 ### *Importing and wrangling data*
 
-```{r import}
+```{r import, include = FALSE, echo = TRUE}
 
 #### Human Development Index data ----
 
@@ -99,7 +99,8 @@ colnames(HDI_dict) <- c("HDI_variable_name", "HDI_variable_description", "HDI_va
 
 # Cleaning up unneeded files
 
-rm(list = c(HDIraw, HDIcolnm, HDI_vhhd, HDI_hhd, HDI_mhd, HDI_lhd, HDI_oth))
+rm(list = c("HDIraw", "HDIcolnm", "HDI_vhhd", "HDI_hhd", "HDI_mhd", "HDI_lhd", "HDI_oth"))
+
 
 #### Social Progress Index data ----
 
@@ -135,8 +136,9 @@ SPIdata <- SPI_join %>% gather(`2014`, `2015`, `2016`, `2017`, key = "year", val
 
 # Cleaning up unneeded files
 
-rm(list = c(SPI_2017_raw, SPI_2017_data, SPI_2016_raw, SPI_2016_data, SPI_2015_raw, SPI_2015_data, 
-   SPI_2014_raw, SPI_2014_data, SPI_join))
+rm(list = c("SPI_2017_raw", "SPI_2017_data", "SPI_2016_raw", "SPI_2016_data", "SPI_2015_raw", "SPI_2015_data", 
+   "SPI_2014_raw", "SPI_2014_data", "SPI_join"))
+
 
 #### World Happiness Score data ----
 
@@ -162,6 +164,50 @@ rm(gender_raw)
 
 #View(gender_raw)
 
+
+#### World Health Organization life expectancy data ----
+
+lifeexp_raw <- read_csv("data/WHO_lifeexp.csv")
+lifeexp_raw <- lifeexp_raw %>% select(1:8)
+
+lifeexp_sub <- lifeexp_raw
+
+colnames(lifeexp_sub) <- c("country", "year", "birth_MF", "birth_M", 
+                       "birth_F", "sixty_MF", "sixty_M", "sixty_F")
+lifeexp <- lifeexp_sub %>% 
+  slice(2:length(country)) %>% 
+  group_by(country) %>% 
+  mutate(maxyr = max(year)) %>% 
+  mutate(maxyr = case_when(
+    year == maxyr ~ 1,
+    year != maxyr ~ 0
+  )) %>% 
+  ungroup()
+
+# Creating a data dictionary
+
+lifeexp_desc <- as.vector(lifeexp_raw %>% slice(1:1))
+colnames(lifeexp_desc) <- NULL
+lifeexp_attr <- colnames(lifeexp_raw)
+lifeexp_colnames <- as.tibble(c("country", "year", "birth_MF", "birth_M", "birth_F", "sixty_MF", 
+                                "sixty_M", "sixty_F"))
+colnames(lifeexp_colnames) <- "lifeexp_variable_name"
+
+lifeexp_dict <- as.tibble(t(rbind(lifeexp_attr, lifeexp_desc)))
+lifeexp_dict[1, 1] <- lifeexp_dict[1, 2]
+lifeexp_dict[2, 1] <- lifeexp_dict[2, 2]
+colnames(lifeexp_dict) <- c("attr", "desc")
+lifeexp_dict <- lifeexp_dict %>%
+  mutate(attr = str_replace_all(attr, "\\_1|\\_2", "")) %>% 
+  mutate(lifeexp_variable_description = paste0(attr, ", ", desc)) %>% 
+  select(lifeexp_variable_description)
+lifeexp_dict <- bind_cols(lifeexp_colnames, lifeexp_dict)
+
+# Cleaning up unneeded files
+
+rm(list = c("lifeexp_raw", "lifeexp_sub", "lifeexp_desc", "lifeexp_attr", "lifeexp_colnames"))
+
+
 #### Importing and wrangling OECD data via function ----
 
 OECD_wrangle <- function(df, stem){
@@ -169,8 +215,8 @@ OECD_wrangle <- function(df, stem){
   select(LOCATION, TIME, Value) %>%
   rename(country3 = LOCATION) %>%
   rename(year = TIME) %>%
-  rename(!!stem := Value) %>%         # Tidy eval syntax - use !! to unquote LHS, then := substitute assignment operator
-  group_by(country3) %>%
+  rename(!!stem := Value) %>%         # Tidy eval syntax - use !! to unquote LHS, then := substitute
+  group_by(country3) %>%              # assignment operator
   mutate(maxyr = max(year)) %>%
   ungroup() %>%
   mutate(!!paste0(stem, "_maxyr") := case_when(
@@ -221,8 +267,9 @@ OECDdata <- full_join(OECDjoin, tertiaryeddata, by = c("country3", "year"))
 
 # Cleaning up unneeded files
 
-rm(list = c(hoursworkedraw, hoursworkeddata, incomeineqraw, incomeineqdata, infantmortraw,
-            infantmortdata, oophcspendraw, oophcspenddata, tertiaryedraw, tertiaryeddata, OECDjoin))
+rm(list = c("hoursworkedraw", "hoursworkeddata", "incomeineqraw", "incomeineqdata", "infantmortraw",
+            "infantmortdata", "oophcspendraw", "oophcspenddata", "tertiaryedraw", "tertiaryeddata", "OECDjoin"))
+
 
 #### Establishing a crosswalk for country names and 3-letter codes ----
 
