@@ -97,7 +97,7 @@ HDI_yr <- c(2017, NA, rep(2017,6),2016, 2017)
 HDI_dict <- as.tibble(cbind(HDI_var, HDI_desc, HDI_yr))
 colnames(HDI_dict) <- c("HDI_variable_name", "HDI_variable_description", "HDI_variable_year")
 
-# Cleaning up unneeded files
+# Removing unneeded files
 
 rm(list = c("HDIraw", "HDIcolnm", "HDI_vhhd", "HDI_hhd", "HDI_mhd", "HDI_lhd", "HDI_oth"))
 
@@ -134,7 +134,7 @@ SPI_join <- full_join(SPI_join, SPI_2015_data, by = "iso3c")
 SPI_join <- full_join(SPI_join, SPI_2014_data, by = "iso3c")
 SPIdata <- SPI_join %>% gather(`2014`, `2015`, `2016`, `2017`, key = "year", value = "SPI")
 
-# Cleaning up unneeded files
+# Removing unneeded files
 
 rm(list = c("SPI_2017_raw", "SPI_2017_data", "SPI_2016_raw", "SPI_2016_data", "SPI_2015_raw", "SPI_2015_data", 
    "SPI_2014_raw", "SPI_2014_data", "SPI_join"))
@@ -159,7 +159,8 @@ genderdata <- gender_raw %>%
   slice(2:dim(gender_raw)[1]) %>% 
   mutate(year = 2016)
 
-# Cleaning up unneeded files
+# Removing unneeded files
+
 rm(gender_raw)
 
 #View(gender_raw)
@@ -174,7 +175,7 @@ lifeexp_sub <- lifeexp_raw
 
 colnames(lifeexp_sub) <- c("country", "year", "birth_MF", "birth_M", 
                        "birth_F", "sixty_MF", "sixty_M", "sixty_F")
-lifeexp <- lifeexp_sub %>% 
+lifeexpdata <- lifeexp_sub %>% 
   slice(2:length(country)) %>% 
   group_by(country) %>% 
   mutate(maxyr = max(year)) %>% 
@@ -203,9 +204,39 @@ lifeexp_dict <- lifeexp_dict %>%
   select(lifeexp_variable_description)
 lifeexp_dict <- bind_cols(lifeexp_colnames, lifeexp_dict)
 
-# Cleaning up unneeded files
+# Removing unneeded files
 
 rm(list = c("lifeexp_raw", "lifeexp_sub", "lifeexp_desc", "lifeexp_attr", "lifeexp_colnames"))
+
+
+#### World Bank GDP data
+
+GDPraw <- read_csv("data/GDPdata.csv")
+
+GDPcolnames <- GDPraw %>% slice(4:4)
+
+GDPsub <- GDPraw %>% 
+  slice(-(1:4))
+
+colnames(GDPsub) <- GDPcolnames
+
+GDPdata <- GDPsub %>% 
+  rename(country = `Country Name`) %>% 
+  rename(country3 = `Country Code`) %>% 
+  select(-(3:44)) %>%
+  gather(3:20, key = "year", value = "GDP_USD_2018") %>%      # Valuation is in $US 2018
+  group_by(country, country3) %>% 
+  mutate(maxyr = max(year)) %>% 
+  mutate(maxyr = case_when(
+    is.na(maxyr) == TRUE ~ as.double(TRUE),
+    maxyr == year ~ 1,
+    maxyr != year ~ 0
+  )) %>% 
+  ungroup()
+
+# Removing unneeded files
+
+rm(list = c("GDPraw", "GDPsub", "GDPcolnames"))
 
 
 #### Importing and wrangling OECD data via function ----
@@ -265,7 +296,7 @@ OECDjoin <- full_join(OECDjoin, infantmortdata, by = c("country3", "year"))
 OECDjoin <- full_join(OECDjoin, oophcspenddata, by = c("country3", "year"))
 OECDdata <- full_join(OECDjoin, tertiaryeddata, by = c("country3", "year"))
 
-# Cleaning up unneeded files
+# Removing unneeded files
 
 rm(list = c("hoursworkedraw", "hoursworkeddata", "incomeineqraw", "incomeineqdata", "infantmortraw",
             "infantmortdata", "oophcspendraw", "oophcspenddata", "tertiaryedraw", "tertiaryeddata", "OECDjoin"))
