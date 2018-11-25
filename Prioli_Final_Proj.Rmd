@@ -15,10 +15,16 @@ geometry: margin = 0.5in
 ## **Methods**
 
 <!-- Notes
-  * Limited to 5 years (2013 - present; probably want to examine final dataset and exclude 2018 - mostly NA)
+  * Limited dataset to 2016, except for OECD income inequality data, which was most complete for 2015
   * May want to explain methods & show one example for each import/wrangle/test against countries, then hide code for the rest, indicating that full code is either in appendix or on github (will make report too long otherwise)
   * Reconsider how much I need the data dictionaries and the "maxyr" columns
      * Consider filtering individual datasets to maxyr == 1 before joining?
+  * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
+  
+  
+  * Limitations:
+    * 2015 data for OECD income inequality
+    * OECD data has only 43 countries
   -->
 
 
@@ -69,14 +75,13 @@ countries <- countries_full %>%
 Human Development Index (HDI) data:
 
 ```{r HDI_import, include = FALSE, echo = TRUE}
-HDIraw <- read_xlsx("data/HDIdata.xlsx")
+HDIraw <- read_xlsx("data/HDIdata2018.xlsx", sheet = "Table 2")
 HDIraw
 
 HDIdata <- HDIraw %>% 
-  select(-X__3, -X__5, -X__7, -X__9, -X__11, -X__13)
+  select(1:2, X__14)
 
-HDIcolnm <- c(HDIdata[[3,1]], HDIdata[[3,2]], HDIdata[[2,3]], HDIdata[[2,4]], HDIdata[[2,5]], HDIdata[[2,6]], 
-              HDIdata[[2,7]], HDIdata[[2,8]], paste0(HDIdata[[2,9]], "_2016"))
+HDIcolnm <- c(HDIdata[[3,1]], HDIdata[[3,2]], HDIdata[[4,3]])
 colnames(HDIdata) <- HDIcolnm
 
 vhhd_st <- which(HDIdata$Country == "VERY HIGH HUMAN DEVELOPMENT") + 1
@@ -115,31 +120,25 @@ HDI_oth <- HDIdata %>%
   mutate(HDI_cat = NA)
 
 HDIdata <- bind_rows(HDI_vhhd, HDI_hhd, HDI_mhd, HDI_lhd, HDI_oth) %>% 
-  rename(HDIrank_2017 = `HDI rank`) %>% 
+  rename(HDIrank = `HDI rank`) %>% 
   rename(country = Country) %>% 
-  rename(HDIindex = `Human Development Index (HDI)`) %>% 
-  rename(HDI_lifexp = `Life expectancy at birth`) %>% 
-  rename(HDI_expyrschool = `Expected years of schooling`) %>% 
-  rename(HDI_meanyrschool = `Mean years of schooling`) %>% 
-  rename(HDI_GNI = `Gross national income (GNI) per capita`) %>% 
-  rename(HDI_GNI_rank = `GNI per capita rank minus HDI rank`) %>%
-  rename(HDIrank_2016 = `HDI rank_2016`) %>% 
-  mutate(year = 2017) %>% 
-  mutate(HDI_maxyr = case_when(
-    year == 2017 ~ 1,
-    is.na(year) == TRUE ~ as.double(NA)
-  ))
-HDIdata <- HDIdata[c(2, 1, 3:8, 10:12, 9)] %>% select(-12)
+  rename(HDIindex = `2016`) #%>% 
+  # mutate(year = 2016)
+  # mutate(HDI_maxyr = case_when(
+  #   year == 2017 ~ 1,
+  #   is.na(year) == TRUE ~ as.double(NA)
+  # ))
+HDIdata <- HDIdata[c(2, 1, 3:4)]
 
 # Creating a data dictionary
 
-HDI_var <- colnames(HDIdata)
-HDI_desc <- c(HDIcolnm, "HDI category")
-HDI_desc <- HDI_desc[c(2, 1, 3:8, 10, 9)]
-HDI_yr <- c(NA, rep(2017, 8), 2016)
-HDI_dict <- as.tibble(cbind(HDI_var, HDI_desc, HDI_yr))
-colnames(HDI_dict) <- c("HDI_variable_name", "HDI_variable_description", "HDI_variable_year")
-HDI_dict <- HDI_dict %>% slice(-10)
+# HDI_var <- colnames(HDIdata)
+# HDI_desc <- c(HDIcolnm, "HDI category")
+# HDI_desc <- HDI_desc[c(2, 1, 3:8, 10, 9)]
+# HDI_yr <- c(NA, rep(2017, 8), 2016)
+# HDI_dict <- as.tibble(cbind(HDI_var, HDI_desc, HDI_yr))
+# colnames(HDI_dict) <- c("HDI_variable_name", "HDI_variable_description", "HDI_variable_year")
+# HDI_dict <- HDI_dict %>% slice(-10)
 ```
 
 Using `anti_join()` to see which countries in `HDIdata` don't have a match in the `countries` dataframe, and correcting those for which an inexact match exists:
@@ -193,52 +192,51 @@ dim(HDIanti)
 
 # Removing unneeded files
 
-rm(list = c("HDIraw", "HDIcolnm", "HDI_vhhd", "HDI_hhd", "HDI_mhd", "HDI_lhd", "HDI_oth", "HDI_var",
-            "HDI_desc", "HDI_yr", "HDIanti"))
+rm(list = c("HDIraw", "HDIcolnm", "HDI_vhhd", "HDI_hhd", "HDI_mhd", "HDI_lhd", "HDI_oth", "HDIanti"))
 ```
 
 Social Progress Index (SPI) data:
 
 ```{r SDI_import, include = FALSE, echo = TRUE}
-SPI_2017_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 3)
+#SPI_2017_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 3)
 SPI_2016_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 4)
-SPI_2015_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 5)
-SPI_2014_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 6)
+#SPI_2015_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 5)
+#SPI_2014_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 6)
 
-SPI_2017_data <- SPI_2017_raw %>% 
+# SPI_2017_data <- SPI_2017_raw %>% 
+#   select(2:3) %>% 
+#   rename(`2017` = `Social Progress Index`,
+#          country3 = Code)
+
+SPIdata <- SPI_2016_raw %>% 
   select(2:3) %>% 
-  rename(`2017` = `Social Progress Index`,
+  rename(`SPI` = `Social Progress Index`,
          country3 = Code)
 
-SPI_2016_data <- SPI_2016_raw %>% 
-  select(2:3) %>% 
-  rename(`2016` = `Social Progress Index`,
-         country3 = Code)
+# SPI_2015_data <- SPI_2015_raw %>% 
+#   select(2:3) %>% 
+#   rename(`2015` = `Social Progress Index`,
+#          country3 = Code)
+# 
+# SPI_2014_data <- SPI_2014_raw %>% 
+#   select(2:3) %>% 
+#   rename(`2014` = `Social Progress Index`,
+#          country3 = Code)
 
-SPI_2015_data <- SPI_2015_raw %>% 
-  select(2:3) %>% 
-  rename(`2015` = `Social Progress Index`,
-         country3 = Code)
-
-SPI_2014_data <- SPI_2014_raw %>% 
-  select(2:3) %>% 
-  rename(`2014` = `Social Progress Index`,
-         country3 = Code)
-
-SPI_join <- full_join(SPI_2017_data, SPI_2016_data, by = "country3")
-SPI_join <- full_join(SPI_join, SPI_2015_data, by = "country3")
-SPI_join <- full_join(SPI_join, SPI_2014_data, by = "country3")
-SPIdata <- SPI_join %>% 
-  gather(`2014`, `2015`, `2016`, `2017`, key = "year", value = "SPI") %>% 
-  mutate(year = as.numeric(year)) %>% 
-  group_by(country3) %>% 
-  mutate(SPI_maxyr = max(year)) %>% 
-  mutate(SPI_maxyr = case_when(
-    is.na(SPI_maxyr) == TRUE ~ as.double(TRUE),
-    SPI_maxyr == year ~ 1,
-    SPI_maxyr != year ~ 0
-  )) %>% 
-  ungroup()
+# SPI_join <- full_join(SPI_2017_data, SPI_2016_data, by = "country3")
+# SPI_join <- full_join(SPI_join, SPI_2015_data, by = "country3")
+# SPI_join <- full_join(SPI_join, SPI_2014_data, by = "country3")
+# SPIdata <- SPI_join %>% 
+#   gather(`2014`, `2015`, `2016`, `2017`, key = "year", value = "SPI") %>% 
+#   mutate(year = as.numeric(year)) %>% 
+#   group_by(country3) %>% 
+#   mutate(SPI_maxyr = max(year)) %>% 
+#   mutate(SPI_maxyr = case_when(
+#     is.na(SPI_maxyr) == TRUE ~ as.double(TRUE),
+#     SPI_maxyr == year ~ 1,
+#     SPI_maxyr != year ~ 0
+#   )) %>% 
+#   ungroup()
 ```
 
 Testing against `countries` and renaming to correct for conflicts:
@@ -271,8 +269,7 @@ dim(SPIanti)
 
 # Removing unneeded files
 
-rm(list = c("SPI_2017_raw", "SPI_2017_data", "SPI_2016_raw", "SPI_2016_data", "SPI_2015_raw", "SPI_2015_data", 
-   "SPI_2014_raw", "SPI_2014_data", "SPI_join", "SPIanti"))
+rm(list = c("SPI_2016_raw", "SPIanti"))
 ```
 
 World Happiness Score data:
@@ -282,15 +279,16 @@ WHR_raw <- read_xls("data/WHRdata.xls", sheet = 1)
 WHRdata <- WHR_raw %>% 
   select(1:3) %>% 
   rename(happiness = `Life Ladder`) %>% 
-  filter(year >= 2013) %>% 
-  group_by(country) %>% 
-  mutate(WHR_maxyr = max(year)) %>% 
-  mutate(WHR_maxyr = case_when(
-    is.na(WHR_maxyr) == TRUE ~ as.double(TRUE),
-    WHR_maxyr == year ~ 1,
-    WHR_maxyr != year ~ 0
-  )) %>% 
-  ungroup()
+  filter(year == 2016) %>% 
+  select(-year) # %>% 
+  # group_by(country) %>% 
+  # mutate(WHR_maxyr = max(year)) %>% 
+  # mutate(WHR_maxyr = case_when(
+  #   is.na(WHR_maxyr) == TRUE ~ as.double(TRUE),
+  #   WHR_maxyr == year ~ 1,
+  #   WHR_maxyr != year ~ 0
+  # )) %>% 
+  # ungroup()
 ```
 
 Testing against `countries` and correcting for conflicts:
@@ -336,12 +334,12 @@ World Economic Forum Gender Equality Index data:
 ```{r gender_import, include = FALSE, echo = TRUE}
 gender_raw <- read_xlsx("data/WEF_gender.xlsx", sheet = 2, range = "$A$2:$K$147")
 gender_raw <- gender_raw %>% 
-  select(1:2, 4, 6, 8, 10)
-colnames(gender_raw) <- c("country", "overall_index", "econ_subindex", "educ_subindex", "health_subindex", "polit_subindex")
+  select(1:2)
+colnames(gender_raw) <- c("country", "genderequality_index")
 genderdata <- gender_raw %>% 
-  slice(2:dim(gender_raw)[1]) %>% 
-  mutate(year = 2016) %>% 
-  mutate(gender_maxyr = 1)
+  slice(2:dim(gender_raw)[1]) #%>% 
+  # mutate(year = 2016) %>% 
+  # mutate(gender_maxyr = 1)
 ```
 
 Testing against `countries` and correcting for conflicts:
@@ -389,43 +387,43 @@ World Health Organization life expectancy data:
 
 ```{r lifeexp_import, include = FALSE, echo = TRUE}
 lifeexp_raw <- read_csv("data/WHO_lifeexp.csv")
-lifeexp_raw <- lifeexp_raw %>% select(1:8)
+lifeexp_raw <- lifeexp_raw %>% select(1:3, 6)
 
 lifeexp_sub <- lifeexp_raw
 
-colnames(lifeexp_sub) <- c("country", "year", "birth_MF", "birth_M", 
-                       "birth_F", "sixty_MF", "sixty_M", "sixty_F")
+colnames(lifeexp_sub) <- c("country", "year", "birth_MF", "sixty_MF")
 lifeexpdata <- lifeexp_sub %>% 
   slice(2:length(country)) %>% 
   mutate(year = as.numeric(year)) %>% 
-  filter(year >= 2013) %>% 
-  group_by(country) %>% 
-  mutate(lifeexp_maxyr = max(year)) %>% 
-  mutate(lifeexp_maxyr = case_when(
-    is.na(lifeexp_maxyr) == TRUE ~ as.double(TRUE),
-    lifeexp_maxyr == year ~ 1,
-    lifeexp_maxyr != year ~ 0
-  )) %>% 
-  ungroup()
+  filter(year == 2016) %>% 
+  select(-year) # %>% 
+  # group_by(country) %>% 
+  # mutate(lifeexp_maxyr = max(year)) %>% 
+  # mutate(lifeexp_maxyr = case_when(
+  #   is.na(lifeexp_maxyr) == TRUE ~ as.double(TRUE),
+  #   lifeexp_maxyr == year ~ 1,
+  #   lifeexp_maxyr != year ~ 0
+  # )) %>% 
+  # ungroup()
 
 # Creating a data dictionary
-
-lifeexp_desc <- as.vector(lifeexp_raw %>% slice(1:1))
-colnames(lifeexp_desc) <- NULL
-lifeexp_attr <- colnames(lifeexp_raw)
-lifeexp_colnames <- as.tibble(c("country", "year", "birth_MF", "birth_M", "birth_F", "sixty_MF", 
-                                "sixty_M", "sixty_F"))
-colnames(lifeexp_colnames) <- "lifeexp_variable_name"
-
-lifeexp_dict <- as.tibble(t(rbind(lifeexp_attr, lifeexp_desc)))
-lifeexp_dict[1, 1] <- lifeexp_dict[1, 2]
-lifeexp_dict[2, 1] <- lifeexp_dict[2, 2]
-colnames(lifeexp_dict) <- c("attr", "desc")
-lifeexp_dict <- lifeexp_dict %>%
-  mutate(attr = str_replace_all(attr, "\\_1|\\_2", "")) %>% 
-  mutate(lifeexp_variable_description = paste0(attr, ", ", desc)) %>% 
-  select(lifeexp_variable_description)
-lifeexp_dict <- bind_cols(lifeexp_colnames, lifeexp_dict)
+# 
+# lifeexp_desc <- as.vector(lifeexp_raw %>% slice(1:1))
+# colnames(lifeexp_desc) <- NULL
+# lifeexp_attr <- colnames(lifeexp_raw)
+# lifeexp_colnames <- as.tibble(c("country", "year", "birth_MF", "birth_M", "birth_F", "sixty_MF", 
+#                                 "sixty_M", "sixty_F"))
+# colnames(lifeexp_colnames) <- "lifeexp_variable_name"
+# 
+# lifeexp_dict <- as.tibble(t(rbind(lifeexp_attr, lifeexp_desc)))
+# lifeexp_dict[1, 1] <- lifeexp_dict[1, 2]
+# lifeexp_dict[2, 1] <- lifeexp_dict[2, 2]
+# colnames(lifeexp_dict) <- c("attr", "desc")
+# lifeexp_dict <- lifeexp_dict %>%
+#   mutate(attr = str_replace_all(attr, "\\_1|\\_2", "")) %>% 
+#   mutate(lifeexp_variable_description = paste0(attr, ", ", desc)) %>% 
+#   select(lifeexp_variable_description)
+# lifeexp_dict <- bind_cols(lifeexp_colnames, lifeexp_dict)
 ```
 
 Testing against `countries` and correcting for conflicts:
@@ -480,7 +478,7 @@ dim(lifeexpanti)
 
 # Removing unneeded files
 
-rm(list = c("lifeexp_raw", "lifeexp_sub", "lifeexp_desc", "lifeexp_attr", "lifeexp_colnames"))
+rm(list = c("lifeexp_raw", "lifeexp_sub"))
 ```
 
 World Bank Gross Domestic Product (GDP) data:
@@ -499,15 +497,16 @@ GDPdata <- GDPsub %>%
   select(-(3:44)) %>%
   gather(3:20, key = "year", value = "GDP_USD_2018") %>%      # Valuation is in $US 2018
   mutate(year = as.numeric(year)) %>% 
-  filter(year >= 2013) %>% 
-  group_by(country, country3) %>% 
-  mutate(GDP_maxyr = max(year)) %>% 
-  mutate(GDP_maxyr = case_when(
-    is.na(GDP_maxyr) == TRUE ~ as.double(TRUE),
-    GDP_maxyr == year ~ 1,
-    GDP_maxyr != year ~ 0
-  )) %>% 
-  ungroup()
+  filter(year == 2016) %>% 
+  select(-year) # %>% 
+  # group_by(country, country3) %>% 
+  # mutate(GDP_maxyr = max(year)) %>% 
+  # mutate(GDP_maxyr = case_when(
+  #   is.na(GDP_maxyr) == TRUE ~ as.double(TRUE),
+  #   GDP_maxyr == year ~ 1,
+  #   GDP_maxyr != year ~ 0
+  # )) %>% 
+  # ungroup()
 ```
 
 Testing against `countries` and correcting for conflicts:
@@ -555,29 +554,29 @@ OECD_wrangle <- function(df, stem){
   select(LOCATION, TIME, Value) %>%
   rename(country3 = LOCATION) %>%
   rename(year = TIME) %>%
-  rename(!!stem := Value) %>%         # Tidy eval syntax - use !! to unquote LHS, then := substitute
-  group_by(country3) %>%              # assignment operator
-  mutate(maxyr = max(year)) %>%
-  ungroup() %>%
-  mutate(!!paste0(stem, "_maxyr") := case_when(
-    year == maxyr ~ 1,
-    TRUE ~ 0
-  )) %>%
-  select(-maxyr)
+  rename(!!stem := Value) # %>%         # Tidy eval syntax - use !! to unquote LHS,
+  # group_by(country3) %>%              # then := substitute assignment operator
+  # mutate(maxyr = max(year)) %>%
+  # ungroup() %>%
+  # mutate(!!paste0(stem, "_maxyr") := case_when(
+  #   year == maxyr ~ 1,
+  #   TRUE ~ 0
+  # )) %>%
+  # select(-maxyr)
   
   stemout <- return(stemdata)
 }
 
 # For data dictionaries
 
-OECD_dict <- function(df, stem, stemvar, stemdesc, stemdict){
-  stemvar <- colnames(df)
-  stemdesc <- c("Three-character country code", "Year", paste0(stem, " value"), "Most recent year flag")
-  stemdict <- as.tibble(cbind(stemvar, stemdesc))
-  colnames(stemdict) <- c(paste0(stem, "_variable_name"), paste0(stem, "_variable_description"))
-  
-  dictout <- return(stemdict)
-}
+# OECD_dict <- function(df, stem, stemvar, stemdesc, stemdict){
+#   stemvar <- colnames(df)
+#   stemdesc <- c("Three-character country code", "Year", paste0(stem, " value"), "Most recent year flag")
+#   stemdict <- as.tibble(cbind(stemvar, stemdesc))
+#   colnames(stemdict) <- c(paste0(stem, "_variable_name"), paste0(stem, "_variable_description"))
+#   
+#   dictout <- return(stemdict)
+# }
 
 hoursworkedraw <- read_csv("data/OECD_hoursworked.csv")
 incomeineqraw <- read_csv("data/OECD_incomeineq.csv")
@@ -585,25 +584,35 @@ infantmortraw <- read_csv("data/OECD_infantmortality.csv")
 oophcspendraw <- read_csv("data/OECD_oophcspend.csv")
 tertiaryedraw <- read_csv("data/OECD_tertiaryed.csv")
 
-hoursworkeddata <- OECD_wrangle(hoursworkedraw, "hoursworked")
-hoursworked_dict <- OECD_dict(hoursworkeddata, "hoursworked", "hoursworked_var", "hoursworked_desc", "hoursworked_dict")
+hoursworkeddata <- OECD_wrangle(hoursworkedraw, "hoursworked") %>% 
+  filter(year == 2016) %>% 
+  select(-year)
+#hoursworked_dict <- OECD_dict(hoursworkeddata, "hoursworked", "hoursworked_var", "hoursworked_desc", "hoursworked_dict")
 
-incomeineqdata <- OECD_wrangle(incomeineqraw, "incomeineq")
-incomeineq_dict <- OECD_dict(incomeineqdata, "incomeineq", "incomeineq_var", "incomeineq_desc", "incomeineq_dict")
+incomeineqdata <- OECD_wrangle(incomeineqraw, "incomeineq") %>% 
+  filter(year == 2015) %>% 
+  select(-year)
+#incomeineq_dict <- OECD_dict(incomeineqdata, "incomeineq", "incomeineq_var", "incomeineq_desc", "incomeineq_dict")
 
-infantmortdata <- OECD_wrangle(infantmortraw, "infantmort")
-infantmort_dict <- OECD_dict(infantmortdata, "infantmort", "infantmort_var", "infantmort_desc", "infantmort_dict")
+infantmortdata <- OECD_wrangle(infantmortraw, "infantmort") %>% 
+  filter(year == 2016) %>% 
+  select(-year)
+#infantmort_dict <- OECD_dict(infantmortdata, "infantmort", "infantmort_var", "infantmort_desc", "infantmort_dict")
 
-oophcspenddata <- OECD_wrangle(oophcspendraw, "oophcspend")
-oophcspend_dict <- OECD_dict(oophcspenddata, "oophcspend", "oophcspend_var", "oophcspend_desc", "oophcspend_dict")
+oophcspenddata <- OECD_wrangle(oophcspendraw, "oophcspend") %>% 
+  filter(year == 2016) %>% 
+  select(-year)
+#oophcspend_dict <- OECD_dict(oophcspenddata, "oophcspend", "oophcspend_var", "oophcspend_desc", "oophcspend_dict")
 
-tertiaryeddata <- OECD_wrangle(tertiaryedraw, "tertiaryed")
-tertiaryed_dict <- OECD_dict(tertiaryeddata, "tertiaryed", "tertiaryed_var", "tertiaryed_desc", "tertiaryed_dict")
+tertiaryeddata <- OECD_wrangle(tertiaryedraw, "tertiaryed") %>% 
+  filter(year == 2016) %>% 
+  select(-year)
+#tertiaryed_dict <- OECD_dict(tertiaryeddata, "tertiaryed", "tertiaryed_var", "tertiaryed_desc", "tertiaryed_dict")
 
-OECDjoin <- full_join(hoursworkeddata, incomeineqdata, by = c("country3", "year"))
-OECDjoin <- full_join(OECDjoin, infantmortdata, by = c("country3", "year"))
-OECDjoin <- full_join(OECDjoin, oophcspenddata, by = c("country3", "year"))
-OECDdata <- full_join(OECDjoin, tertiaryeddata, by = c("country3", "year"))
+OECDjoin <- full_join(hoursworkeddata, incomeineqdata, by = "country3")
+OECDjoin <- full_join(OECDjoin, infantmortdata, by = "country3")
+OECDjoin <- full_join(OECDjoin, oophcspenddata, by = "country3")
+OECDdata <- full_join(OECDjoin, tertiaryeddata, by = "country3")
 ```
 
 Testing against `countries` and correcting for conflicts:
@@ -636,32 +645,41 @@ rm(list = c("hoursworkedraw", "hoursworkeddata", "incomeineqraw", "incomeineqdat
 ### **Combining individual data files into one dataframe**
 
 ```{r combine, include = FALSE, echo = TRUE}
-# Creating a framework with one row for every country/year combination
+joindata_1 <- full_join(countries, HDIdata, by = "country")
+joindata_2 <- left_join(joindata_1, SPIdata, by = "country3")
+joindata_3 <- left_join(joindata_2, WHRdata, by = "country")
+joindata_4 <- left_join(joindata_3, genderdata, by = "country")
+joindata_5 <- left_join(joindata_4, lifeexpdata, by = "country")
+joindata_6 <- left_join(joindata_5, GDPdata, by = "country3")
+joindata_7 <- left_join(joindata_6, OECDdata, by = "country3")
 
-countriesjoin <- bind_rows(countries, countries, countries, countries, countries)
-countrylen <- dim(countries)[[1]]
-years <- as.tibble(rep(c(2013, 2014, 2015, 2016, 2017),
-                       c(rep(countrylen, 5))))
-colnames(years) <- "year"
-countriesjoin <- bind_cols(countriesjoin, years)
+# Excluding countries that have no data
 
-# Joining datasets together
+joinsub <- joindata_7 %>% 
+  arrange(country) %>% 
+  mutate(exclude_flag = case_when(
+    is.na(HDIrank) == TRUE & 
+      is.na(HDIindex) == TRUE &
+      is.na(HDI_cat) == TRUE &
+      is.na(SPI) == TRUE &
+      is.na(happiness) == TRUE &
+      is.na(genderequality_index) == TRUE &
+      is.na(birth_MF) == TRUE &
+      is.na(sixty_MF) == TRUE &
+      is.na(GDP_USD_2018) == TRUE &
+      is.na(hoursworked) == TRUE &
+      is.na(incomeineq) == TRUE &
+      is.na(infantmort) == TRUE &
+      is.na(oophcspend) == TRUE &
+      is.na(tertiaryed) == TRUE               ~ TRUE,
+    TRUE                                      ~ FALSE
+  )) %>% 
+  filter(exclude_flag == FALSE) %>% 
+  select(-exclude_flag)
 
-joindata_1 <- left_join(countriesjoin, HDIdata, by = c("country", "year"))
-joindata_2 <- left_join(joindata_1, SPIdata, by = c("country3", "year"))
-joindata_3 <- left_join(joindata_2, WHRdata, by = c("country", "year"))
-joindata_4 <- left_join(joindata_3, genderdata, by = c("country", "year"))
-joindata_5 <- left_join(joindata_4, lifeexpdata, by = c("country", "year"))
-joindata_6 <- left_join(joindata_5, GDPdata, by = c("country3", "year"))
-joindata_7 <- left_join(joindata_6, OECDdata, by = c("country3", "year"))
-View(joindata_7)
-
-alldata <- joindata_7 %>% 
-  arrange(country, year)
+alldata <- joinsub
 
 write_csv(alldata, "data/alldata.csv")
-
-# Next step - create a sensible subset of the data for analysis
 ```
 
 ### **Univariate Visualizations**
