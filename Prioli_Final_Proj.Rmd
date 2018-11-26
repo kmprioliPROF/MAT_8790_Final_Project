@@ -18,21 +18,21 @@ references:
   title: MAT_8790_Final_Project
 - URL: http://apps.who.int/gho/data/view.main.SDG2016LEXv?lang=en
   author:
-  - family: WHO
+  - family: World Health Organization
   id: who_life
   issued:
     year: 2018
   title: Life Expectancy
 - URL: http://apps.who.int/gho/data/view.main.182?lang=en
   author:
-  - family: WHO
+  - family: World Health Organization
   id: who_infantmort
   issued:
     year: 2018
   title: Probability of Dying per 1000 Live Births
 - URL: http://reports.weforum.org/global-gender-gap-report-2016/rankings/
   author:
-  - family: WEF
+  - family: World Economic Forum
   id: wef_gender
   issued:
     year: 2016
