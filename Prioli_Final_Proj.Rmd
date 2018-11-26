@@ -14,20 +14,13 @@ references:
   issued:
     year: 2018
   title: Life Expectancy
-- URL: https://data.oecd.org/healthres/health-spending.htm
+- URL: http://apps.who.int/gho/data/view.main.182?lang=en
   author:
-  - family: OECD
-  id: oced_hcspend
+  - family: WHO
+  id: who_infantmort
   issued:
     year: 2018
-  title: Healthcare Spending, Out-of-Pocket
-- URL: https://data.oecd.org/eduatt/adult-education-level.htm
-  author:
-  - family: OECD
-  id: oced_edu
-  issued:
-    year: 2018
-  title: Tertiary Education Attainment
+  title: Probability of Dying per 1000 Live Births
 - URL: http://reports.weforum.org/global-gender-gap-report-2016/rankings/
   author:
   - family: WEF
@@ -35,13 +28,6 @@ references:
   issued:
     year: 2016
   title: Gender Equality
-- URL: https://data.oecd.org/emp/hours-worked.htm
-  author:
-  - family: OECD
-  id: oced_hrs
-  issued:
-    year: 2018
-  title: Hours Worked per Week
 - URL: https://data.worldbank.org/indicator/ny.gdp.mktp.cd?view=map&year_high_desc=true 
   author:
   - family: The World Bank
@@ -70,20 +56,6 @@ references:
   issued:
     year: 2018
   title: World Happiness Report
-- URL: https://data.oecd.org/inequality/income-inequality.htm
-  author:
-  - family: OECD
-  id: oecd_incomeineq
-  issued:
-    year: 2018
-  title: Income Inequality
-- URL: https://data.oecd.org/healthstat/infant-mortality-rates.htm
-  author:
-  - family: OECD
-  id: oecd_infantmort
-  issued:
-    year: 2018
-  title: Infant Mortality Rate
 ---
 
 ## **Background**
@@ -95,10 +67,8 @@ references:
 <!-- Notes
   * Limited dataset to 2016, except for OECD income inequality data, which was most complete for 2015
   * May want to explain methods & show one example for each import/wrangle/test against countries, then hide code for the rest, indicating that full code is either in appendix or on github (will make report too long otherwise)
-  * Reconsider how much I need the data dictionaries and the "maxyr" columns
-     * Consider filtering individual datasets to maxyr == 1 before joining?
   * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
-  
+  * Need to better organize flow of report (some results are in Methods, etc)
   
   * Limitations:
     * 2015 data for OECD income inequality
@@ -114,6 +84,9 @@ library(readxl)          # For importing .xls(x) datasets
 library(lazyeval)        # For renaming columns in function
 library(countrycode)     # For establishing uniform country identifiers
 library(ggthemr)         # For prettifying output
+library(gridExtra)       # For grid.arrange()
+library(grid)            # For textGrob() to annotate grid.arrange() elements
+library(kableExtra)      # For nicer output tables
 
 ggthemr("fresh")
 ```
@@ -191,7 +164,7 @@ oth_end <- which(HDIdata$Country == "Human development groups") - 2
 
 HDI_vhhd <- HDIdata %>% 
   slice(vhhd_st:vhhd_end) %>% 
-  mutate(HDI_cat = "Very high")
+  mutate(HDI_cat = "Very High")
 
 HDI_hhd <- HDIdata %>% 
   slice(hhd_st:hhd_end) %>% 
@@ -435,6 +408,71 @@ dim(genderanti)
 rm(list = c("gender_raw", "genderanti"))
 ```
 
+<!-- World Health Organization infant mortality rate data: -->
+
+```{r infantmort_import, include = FALSE, echo = FALSE, eval = TRUE}
+infantmort_raw <- read_csv("data/WHO_infantmort.csv")
+infantmortdata <- infantmort_raw %>% 
+  select(1, 3) %>% 
+  rename(country = Country) %>% 
+  rename(infantmort = `Infant mortality rate (probability of dying between birth and age 1 per 1000 live births)`) %>% 
+  mutate(infantmort = as.numeric(infantmort) / 1000)
+```
+
+<!-- Testing against `countries` and correcting for conflicts: -->
+
+```{r lifeexp_countrytest, include = FALSE, echo = FALSE, eval = TRUE}
+infantmortanti <- infantmortdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country) %>% 
+  unique()
+dim(infantmortanti)
+
+infantmortdata <- infantmortdata %>% 
+  mutate(country = case_when(
+    country == "Antigua and Barbuda"                                  ~ "Antigua & Barbuda",
+    country == "Bolivia (Plurinational State of)"                     ~ "Bolivia",
+    country == "Bosnia and Herzegovina"                               ~ "Bosnia & Herzegovina",
+    country == "Brunei Darussalam"                                    ~ "Brunei",
+    country == "Cabo Verde"                                           ~ "Cape Verde",
+    country == "Congo"                                                ~ "Congo - Brazzaville",
+    country == "Democratic People's Republic of Korea"                ~ "North Korea",
+    country == "Democratic Republic of the Congo"                     ~ "Congo - Kinshasa",
+    country == "Eswatini"                                             ~ "Swaziland",
+    country == "Iran (Islamic Republic of)"                           ~ "Iran",
+    country == "Lao People's Democratic Republic"                     ~ "Laos",
+    country == "Myanmar"                                              ~ "Myanmar (Burma)",
+    country == "Republic of Korea"                                    ~ "South Korea",
+    country == "Republic of Moldova"                                  ~ "Moldova",
+    country == "Russian Federation"                                   ~ "Russia",
+    country == "Saint Kitts and Nevis"                                ~ "St. Kitts & Nevis",
+    country == "Saint Lucia"                                          ~ "St. Lucia",
+    country == "Saint Vincent and the Grenadines"                     ~ "St. Vincent & Grenadines",
+    country == "Syrian Arab Republic"                                 ~ "Syria",
+    country == "The former Yugoslav republic of Macedonia"            ~ "Macedonia",
+    country == "Trinidad and Tobago"                                  ~ "Trinidad & Tobago",
+    country == "United Kingdom of Great Britain and Northern Ireland" ~ "United Kingdom",
+    country == "United Republic of Tanzania"                          ~ "Tanzania",
+    country == "United States of America"                             ~ "United States",
+    country == "Venezuela (Bolivarian Republic of)"                   ~ "Venezuela",
+    country == "Viet Nam"                                             ~ "Vietnam",
+    country == "Côte d'Ivoire"                                        ~ as.character(NA),   # UTC-8
+    country == "Sao Tome and Principe"                                ~ as.character(NA),   # conflicts
+    TRUE                                                              ~ as.character(country)
+  )) %>% 
+  filter(!is.na(country))
+
+infantmortanti <- infantmortdata %>%
+  anti_join(countries, by = "country") %>%
+  select(country) %>%
+  arrange(country) %>% 
+  unique()
+dim(infantmortanti)
+
+rm(list = c("infantmort_raw", "infantmortanti"))
+```
+
 <!-- World Health Organization life expectancy data: -->
 
 ```{r lifeexp_import, include = FALSE, echo = FALSE, eval = TRUE}
@@ -565,78 +603,8 @@ dim(GDPanti)
 rm(list = c("GDPraw", "GDPsub", "GDPcolnames", "GDPanti"))
 ```
 
-This process of importing, wrangling, and testing against the `countries` dataframe was largely the same for all other datasets of interest, with minor differences depending on the native structure of the data.  However, since several of the variables of interest come from OECD, a function was written to wrangle them.
+This process of importing, wrangling, and testing against the `countries` dataframe was largely the same for all other datasets of interest, with minor differences depending on the native structure of the data.
 
-```{r OECD_import, include = TRUE, echo = TRUE, eval = TRUE, warning = FALSE, message = FALSE}
-OECD_wrangle <- function(df, stem){
-  stemdata <- df %>% 
-  select(LOCATION, TIME, Value) %>%
-  rename(country3 = LOCATION) %>%
-  rename(year = TIME) %>%
-  rename(!!stem := Value) # Tidy eval syntax: unquote LHS w/ !!, then := substitute assignment operator
-  stemout <- return(stemdata)
-}
-
-hoursworkedraw <- read_csv("data/OECD_hoursworked.csv")
-incomeineqraw <- read_csv("data/OECD_incomeineq.csv")
-infantmortraw <- read_csv("data/OECD_infantmortality.csv")
-oophcspendraw <- read_csv("data/OECD_oophcspend.csv")
-tertiaryedraw <- read_csv("data/OECD_tertiaryed.csv")
-
-hoursworkeddata <- OECD_wrangle(hoursworkedraw, "hoursworked") %>% 
-  filter(year == 2016) %>% 
-  select(-year)
-
-incomeineqdata <- OECD_wrangle(incomeineqraw, "incomeineq") %>% 
-  filter(year == 2015) %>% 
-  select(-year)
-
-infantmortdata <- OECD_wrangle(infantmortraw, "infantmort") %>% 
-  filter(year == 2016) %>% 
-  select(-year)
-
-oophcspenddata <- OECD_wrangle(oophcspendraw, "oophcspend") %>% 
-  filter(year == 2016) %>% 
-  select(-year)
-
-tertiaryeddata <- OECD_wrangle(tertiaryedraw, "tertiaryed") %>% 
-  filter(year == 2016) %>% 
-  select(-year)
-
-OECDjoin <- full_join(hoursworkeddata, incomeineqdata, by = "country3")
-OECDjoin <- full_join(OECDjoin, infantmortdata, by = "country3")
-OECDjoin <- full_join(OECDjoin, oophcspenddata, by = "country3")
-OECDdata <- full_join(OECDjoin, tertiaryeddata, by = "country3")
-```
-
-Testing `OECDdata` against `countries` was performed as previously described.
-
-<!-- Testing against `countries` and correcting for conflicts: -->
-
-```{r OECD_countrytest, include = FALSE, echo = FALSE, eval = TRUE}
-OECDanti <- OECDdata %>%
-  anti_join(countries, by = "country3") %>%
-  select(country3) %>%
-  arrange(country3) %>% 
-  unique()
-dim(OECDanti)
-
-OECDdata <- OECDdata %>% 
-  filter(country3 != "OAVG" & country3 != "OECD")     # Omitting non-country codes
-
-OECDanti <- OECDdata %>%
-  anti_join(countries, by = "country3") %>%
-  select(country3) %>%
-  arrange(country3) %>% 
-  unique()
-dim(OECDanti)
-
-# Removing unneeded files
-
-rm(list = c("hoursworkedraw", "hoursworkeddata", "incomeineqraw", "incomeineqdata", "infantmortraw",
-            "infantmortdata", "oophcspendraw", "oophcspenddata", "tertiaryedraw", "tertiaryeddata", 
-            "OECDjoin", "OECDanti", "OECD_wrangle"))
-```
 
 ### *Combining individual data files into one dataframe*
 
@@ -647,9 +615,9 @@ joindata_1 <- full_join(countries, HDIdata, by = "country")
 joindata_2 <- left_join(joindata_1, SPIdata, by = "country3")
 joindata_3 <- left_join(joindata_2, WHRdata, by = "country")
 joindata_4 <- left_join(joindata_3, genderdata, by = "country")
-joindata_5 <- left_join(joindata_4, lifeexpdata, by = "country")
-joindata_6 <- left_join(joindata_5, GDPdata, by = "country3")
-joindata_7 <- left_join(joindata_6, OECDdata, by = "country3")
+joindata_5 <- left_join(joindata_4, infantmortdata, by = "country")
+joindata_6 <- left_join(joindata_5, lifeexpdata, by = "country")
+joindata_7 <- left_join(joindata_6, GDPdata, by = "country3")
 
 joinsub <- joindata_7 %>% 
   arrange(country) %>% 
@@ -660,22 +628,19 @@ joinsub <- joindata_7 %>%
       is.na(SPI) == TRUE &
       is.na(happiness) == TRUE &
       is.na(genderequality_index) == TRUE &
+      is.na(infantmort) == TRUE &
       is.na(birth_MF) == TRUE &
       is.na(sixty_MF) == TRUE &
-      is.na(GDP_USD_2018) == TRUE &
-      is.na(hoursworked) == TRUE &
-      is.na(incomeineq) == TRUE &
-      is.na(infantmort) == TRUE &
-      is.na(oophcspend) == TRUE &
-      is.na(tertiaryed) == TRUE               ~ TRUE,
+      is.na(GDP_USD_2018) == TRUE             ~ TRUE,
     TRUE                                      ~ FALSE
   )) %>% 
   filter(exclude_flag == FALSE) %>% 
   select(-exclude_flag)
 
 alldata <- joinsub
+len <- dim(alldata)[[1]]
 
-# write_csv(alldata, "data/alldata.csv")   # Uncomment if an export is desired
+# write_csv(alldata, paste0("data/alldata_", lubridate::today(),".csv"))  # Uncomment to export data
 ```
 
 ```{r join_remove, include = FALSE, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
@@ -689,28 +654,150 @@ The final dataframe, titled `alldata`, contains the following:
 
 | **Source**       	| **Variable Name**    	| **Description**                                  	|
 |------------------	|----------------------	|--------------------------------------------------	|
-| @un_dvlpt        	| HDIrank              	| HDI ranking                                      	|
+| @un_dvlpt        	| HDIrank              	| Human Development Index ranking                  	|
 | @un_dvlpt        	| HDIindex             	| HDI index value (scale of 0:1)                   	|
 | @un_dvlpt        	| HDI_cat              	| HDI index category (5 levels)                    	|
 | @socialprog      	| SPI                  	| Social Progress Index value (scale of 0:100)     	|
 | @whr             	| happiness            	| World Happiness Score (scale of 0:10)            	|
 | @wef_gender      	| genderequality_index 	| Gender Equality Index (scale of 0:1)             	|
+| @who_infantmort  	| infantmort           	| Infant mortality rate                            	|
 | @who_life        	| birth_MF             	| Life expectancy at birth, males & females        	|
 | @who_life        	| sixty_MF             	| Life expectancy at 60 years, males & females     	|
 | @worldbank_gdp   	| GDP_USD_2018         	| 2016 Gross Domestic Product (valued in $US 2018) 	|
-| @oced_hrs        	| hoursworked          	| Hours worked per week                            	|
-| @oecd_incomeineq 	| incomeineq           	| Income inequality                                	|
-| @oecd_infantmort 	| infantmort           	| Infant mortality rate                            	|
-| @oced_hcspend    	| oophcspend           	| Out-of-pocket healthcare spending                	|
-| @oced_edu        	| tertiaryed           	| Tertiary education attainment                    	|
 
 
-### *Univariate Visualizations*
+### *Visualizations*
+
+Univariate and sensible bivariate analyses were generated to explore the data.
+
+Exploring the Human Development Index variables:
+
+```{r HDIplots, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
+HDIindex_hist <- ggplot(data = alldata, aes(x = HDIindex)) +
+  geom_histogram(bins = ceiling(sqrt(203 - sum(is.na(alldata$HDIindex))))) +
+  # geom_density(aes(y = (max(alldata$HDIindex, na.rm = TRUE) - min(alldata$HDIindex, na.rm = TRUE)) / 
+  #                    ceiling(sqrt(203 - sum(is.na(alldata$HDIindex)))) * ..count..), color = "#233b43") +
+  xlab("Human Development Index") +
+  ylab("Count") +
+  ggtitle("Human Development Index Distribution")
+#HDIindex_hist
+
+HDIcat_bar <- ggplot(data = alldata, aes(x = HDI_cat)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), color = "#233b43",
+            hjust = 0.5, position = position_stack(vjust = 0.5)) +
+  xlab("Human Development Category") +
+  ylab("Count") +
+  ggtitle("Human Development Index Counts \nby Category")
+#HDIcat_bar
+
+grid.arrange(HDIindex_hist, HDIcat_bar, nrow = 1)
+```
+
+The top 5 countries by HDI rank are:
+
+```{r HDItop, include = TRUE, echo = TRUE, eval = TRUE}
+HDIsub <- alldata %>% 
+  select(country, HDIrank, HDIindex) %>% 
+  arrange(HDIrank) %>% 
+  filter(!is.na(HDIindex) == TRUE) %>% 
+  mutate(HDIindex = round(HDIindex, digits = 4))
+HDItop <- head(HDIsub, 5) %>% kable(format = "markdown")
+HDItop
+```
+
+and the bottom 5 are:
+
+```{r HDIbot, include = TRUE, echo = TRUE, eval = TRUE}
+HDIbot <- tail(HDIsub, 5) %>% kable(format = "markdown")
+HDIbot
+```
+
+Exploring the Social Progress Index data:
+
+```{r SPIplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+SPI_hist <- ggplot(data = alldata, aes(x = SPI)) +
+  geom_histogram(bins = ceiling(sqrt(203 - sum(is.na(alldata$SPI))))) +
+  # geom_density(aes(y = (max(alldata$SPI, na.rm = TRUE) - min(alldata$SPI, na.rm = TRUE)) / 
+  #                    ceiling(sqrt(203 - sum(is.na(alldata$SPI)))) * ..count..), color = "#233b43") +
+  xlab("Social Progress Index") +
+  ylab("Count") +
+  ggtitle("Social Progress Index Distribution")
+SPI_hist
+```
+
+Exploring the World Happiness Report data:
+
+```{r happinessplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+happiness_hist <- ggplot(data = alldata, aes(happiness)) +
+  geom_histogram(bins = ceiling(sqrt(203 - sum(is.na(alldata$happiness))))) +
+  # geom_density(aes(y = (max(alldata$happiness, na.rm = TRUE) - min(alldata$happiness, na.rm = TRUE)) / 
+  #                    ceiling(sqrt(203 - sum(is.na(alldata$happiness)))) * ..count..), color = "#233b43") +
+  xlab("Happiness Score") +
+  ylab("Count") +
+  ggtitle("Happiness Score Distribution")
+happiness_hist
+```
+
+Exploring the gender equality index data:
+
+```{r genderplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+gender_hist <- ggplot(data = alldata, aes(x = genderequality_index)) +
+  geom_histogram(bins = ceiling(sqrt(203 - sum(is.na(alldata$genderequality_index))))) +
+  xlab("Gender Equality Index") +
+  ylab("Count") +
+  ggtitle("Gender Equality Index Distribution")
+gender_hist
+```
+
+Exploring the WHO infant mortality rate data:
 
 
+Exploring the WHO life expectancy data:
 
-```{r univ, include = TRUE, echo = TRUE}
+```{r lifeexpplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
+lifeexp_birth_box <- ggplot(data = alldata, aes(y = birth_MF)) +
+  geom_boxplot() +
+  ylim(0, 100) +
+  ylab("Overall Life Expectancy (years)") +
+  ggtitle("...at Birth") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
 
+lifeexp_sixty_box <- ggplot(data = alldata, aes(y = 60 + sixty_MF)) +
+  geom_boxplot() +
+  ylim(0, 100) +
+  ylab("") +
+  ggtitle("...at Age 60") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y.left = element_blank())
+
+grid.arrange(lifeexp_birth_box, lifeexp_sixty_box, nrow = 1,
+             top = textGrob("Overall Life Expectancy...",
+                            gp = gpar(fontsize = 16, fontface = "bold")))
+```
+
+Exploring the GDP data:
+
+```{r GDPplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+GDP_dens <- ggplot(data = alldata, aes(x = GDP_USD_2018 / 1000000)) +
+  geom_density() +
+  xlab("GDP (Millions, $US 2018)") +
+  ylab("Density") +
+  ggtitle("Gross Domestic Product") +
+  scale_x_continuous(labels = scales::dollar_format(prefix = "$"))
+GDP_dens
+```
+
+The summary statistics (in millions) are:
+
+```{r GDPsumm, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+GDPsumm <- broom::tidy(round(summary(alldata$GDP_USD_2018 / 1000000), digits = 4)) %>% 
+  kable(format = "markdown")
+GDPsumm
 ```
 
 
