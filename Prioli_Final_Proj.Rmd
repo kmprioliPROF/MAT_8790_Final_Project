@@ -7,6 +7,15 @@ output:
   html_document: default
 geometry: margin = 0.5in
 references:
+- URL: https://github.com/kmprioliPROF/MAT_8790_Final_Project
+  author:
+  - family: Prioli
+    given: Katherine M.
+  id: kmpgit
+  issued:
+    month: 12
+    year: 2018
+  title: MAT_8790_Final_Project
 - URL: http://apps.who.int/gho/data/view.main.SDG2016LEXv?lang=en
   author:
   - family: WHO
@@ -69,10 +78,10 @@ references:
   * May want to explain methods & show one example for each import/wrangle/test against countries, then hide code for the rest, indicating that full code is either in appendix or on github (will make report too long otherwise)
   * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
   * Need to better organize flow of report (some results are in Methods, etc)
+  * Need to more fully narrate steps and interpretations of output
   
   * Limitations:
-    * 2015 data for OECD income inequality
-    * OECD data has only 43 countries
+
   -->
 
 
@@ -87,6 +96,7 @@ library(ggthemr)         # For prettifying output
 library(gridExtra)       # For grid.arrange()
 library(grid)            # For textGrob() to annotate grid.arrange() elements
 library(kableExtra)      # For nicer output tables
+library(GGally)          # For ggpairs() correlation matrix
 
 ggthemr("fresh")
 ```
@@ -421,7 +431,7 @@ infantmortdata <- infantmort_raw %>%
 
 <!-- Testing against `countries` and correcting for conflicts: -->
 
-```{r lifeexp_countrytest, include = FALSE, echo = FALSE, eval = TRUE}
+```{r infantmort_countrytest, include = FALSE, echo = FALSE, eval = TRUE}
 infantmortanti <- infantmortdata %>%
   anti_join(countries, by = "country") %>%
   select(country) %>%
@@ -603,7 +613,7 @@ dim(GDPanti)
 rm(list = c("GDPraw", "GDPsub", "GDPcolnames", "GDPanti"))
 ```
 
-This process of importing, wrangling, and testing against the `countries` dataframe was largely the same for all other datasets of interest, with minor differences depending on the native structure of the data.
+This process of importing, wrangling, and testing against the `countries` dataframe was largely the same for all other datasets of interest, with minor differences depending on the native structure of the data.  Again, for brevity, those steps are not shown here, but are available on the project GitHub site [@kmpgit].
 
 
 ### *Combining individual data files into one dataframe*
@@ -674,13 +684,10 @@ Exploring the Human Development Index variables:
 
 ```{r HDIplots, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 HDIindex_hist <- ggplot(data = alldata, aes(x = HDIindex)) +
-  geom_histogram(bins = ceiling(sqrt(203 - sum(is.na(alldata$HDIindex))))) +
-  # geom_density(aes(y = (max(alldata$HDIindex, na.rm = TRUE) - min(alldata$HDIindex, na.rm = TRUE)) / 
-  #                    ceiling(sqrt(203 - sum(is.na(alldata$HDIindex)))) * ..count..), color = "#233b43") +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$HDIindex))))) +
   xlab("Human Development Index") +
   ylab("Count") +
   ggtitle("Human Development Index Distribution")
-#HDIindex_hist
 
 HDIcat_bar <- ggplot(data = alldata, aes(x = HDI_cat)) +
   geom_bar() +
@@ -689,7 +696,6 @@ HDIcat_bar <- ggplot(data = alldata, aes(x = HDI_cat)) +
   xlab("Human Development Category") +
   ylab("Count") +
   ggtitle("Human Development Index Counts \nby Category")
-#HDIcat_bar
 
 grid.arrange(HDIindex_hist, HDIcat_bar, nrow = 1)
 ```
@@ -717,9 +723,7 @@ Exploring the Social Progress Index data:
 
 ```{r SPIplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
 SPI_hist <- ggplot(data = alldata, aes(x = SPI)) +
-  geom_histogram(bins = ceiling(sqrt(203 - sum(is.na(alldata$SPI))))) +
-  # geom_density(aes(y = (max(alldata$SPI, na.rm = TRUE) - min(alldata$SPI, na.rm = TRUE)) / 
-  #                    ceiling(sqrt(203 - sum(is.na(alldata$SPI)))) * ..count..), color = "#233b43") +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$SPI))))) +
   xlab("Social Progress Index") +
   ylab("Count") +
   ggtitle("Social Progress Index Distribution")
@@ -730,9 +734,7 @@ Exploring the World Happiness Report data:
 
 ```{r happinessplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
 happiness_hist <- ggplot(data = alldata, aes(happiness)) +
-  geom_histogram(bins = ceiling(sqrt(203 - sum(is.na(alldata$happiness))))) +
-  # geom_density(aes(y = (max(alldata$happiness, na.rm = TRUE) - min(alldata$happiness, na.rm = TRUE)) / 
-  #                    ceiling(sqrt(203 - sum(is.na(alldata$happiness)))) * ..count..), color = "#233b43") +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$happiness))))) +
   xlab("Happiness Score") +
   ylab("Count") +
   ggtitle("Happiness Score Distribution")
@@ -743,7 +745,7 @@ Exploring the gender equality index data:
 
 ```{r genderplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
 gender_hist <- ggplot(data = alldata, aes(x = genderequality_index)) +
-  geom_histogram(bins = ceiling(sqrt(203 - sum(is.na(alldata$genderequality_index))))) +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$genderequality_index))))) +
   xlab("Gender Equality Index") +
   ylab("Count") +
   ggtitle("Gender Equality Index Distribution")
@@ -752,6 +754,14 @@ gender_hist
 
 Exploring the WHO infant mortality rate data:
 
+```{r infantmortplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+infantmort_hist <- ggplot(data = alldata, aes(x = infantmort)) + 
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$genderequality_index))))) +
+  xlab("Probability of Infant Mortality") +
+  ylab("Count") +
+  ggtitle("Infant Mortality Distribution")
+infantmort_hist
+```
 
 Exploring the WHO life expectancy data:
 
@@ -759,7 +769,7 @@ Exploring the WHO life expectancy data:
 lifeexp_birth_box <- ggplot(data = alldata, aes(y = birth_MF)) +
   geom_boxplot() +
   ylim(0, 100) +
-  ylab("Overall Life Expectancy (years)") +
+  ylab("Total Life Expectancy (years)") +
   ggtitle("...at Birth") +
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
@@ -776,29 +786,48 @@ lifeexp_sixty_box <- ggplot(data = alldata, aes(y = 60 + sixty_MF)) +
         axis.line.y.left = element_blank())
 
 grid.arrange(lifeexp_birth_box, lifeexp_sixty_box, nrow = 1,
-             top = textGrob("Overall Life Expectancy...",
-                            gp = gpar(fontsize = 16, fontface = "bold")))
+             top = textGrob("Total Life Expectancy...",
+                            gp = gpar(fontsize = 16, fontface = "bold", col = "#545454")))
 ```
 
-Exploring the GDP data:
-
-```{r GDPplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
-GDP_dens <- ggplot(data = alldata, aes(x = GDP_USD_2018 / 1000000)) +
-  geom_density() +
-  xlab("GDP (Millions, $US 2018)") +
-  ylab("Density") +
-  ggtitle("Gross Domestic Product") +
-  scale_x_continuous(labels = scales::dollar_format(prefix = "$"))
-GDP_dens
-```
-
-The summary statistics (in millions) are:
+The summary statistics (in millions) for the GDP data are:
 
 ```{r GDPsumm, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
 GDPsumm <- broom::tidy(round(summary(alldata$GDP_USD_2018 / 1000000), digits = 4)) %>% 
   kable(format = "markdown")
 GDPsumm
 ```
+
+Taking the log transform and plotting:
+
+```{r GDPplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+GDP_hist <- ggplot(data = alldata, aes(x = log(GDP_USD_2018))) +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$GDP_USD_2018))))) +
+  xlab("log(GDP) ($US 2018)") +
+  ylab("Count") +
+  ggtitle("Gross Domestic Product Distribution, Log Transform") +
+  scale_x_continuous(labels = scales::dollar_format(prefix = "$"))
+GDP_hist
+```
+
+Investigating pairwise relationships between continuous variables:
+
+```{r calc_corrplot, include = TRUE, echo = TRUE, message = FALSE, warning = FALSE, fig.width = 10, fig.height = 8}
+alldata <- alldata %>% mutate(logGDP = log(GDP_USD_2018))
+
+corrplot <- ggpairs(data = alldata, columns = c(4, 6:11, 13),
+                    title = "Correlation Matrix, Continuous Variables")
+corrplot
+```
+
+Strong positive linear relationships are seen between `HDIindex` and `SPI`, `happiness`, and `birth_MF`; between `SPI` and `happiness`, `birth_MF`, and `sixty_MF`; and between `happiness` and `sixty_MF`.  Additionally, strong positive relationships that are possibly nonlinear are seen between `HDI_index` and `sixty_MF`, and between `birth_MF` and `sixty_MF`.
+
+Strong negative relationships are seen between `infantmort` and `birth_MF`, between `HDIindex` and `infantmort`, and between `SPI` and `infantmort`, though the latter two of these may not necessarily be linear.  A strong negative nonlinear relationship is seen between `infantmort` and `sixty_MF`.
+
+<!-- Add one or two interesting country-level plots here (http://stat545.com/block014_factors.html) -->
+
+### **Clustering Analysis**
+
 
 
 ## **Results**
