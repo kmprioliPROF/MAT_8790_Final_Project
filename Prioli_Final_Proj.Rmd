@@ -674,21 +674,52 @@ The final dataframe, titled `alldata`, contains the following:
 
 | **Source**       	| **Variable Name**    	| **Description**                                  	|
 |------------------	|----------------------	|--------------------------------------------------	|
+| @whr             	| happiness            	| World Happiness Score (scale of 0:10)            	|
+| @worldbank_gdp   	| GDP_USD_2018         	| 2016 Gross Domestic Product (valued in $US 2018) 	|
 | @un_dvlpt        	| HDIrank              	| Human Development Index ranking                  	|
 | @un_dvlpt        	| HDIindex             	| HDI index value (scale of 0:1)                   	|
 | @un_dvlpt        	| HDI_cat              	| HDI index category (5 levels)                    	|
 | @socialprog      	| SPI                  	| Social Progress Index value (scale of 0:100)     	|
-| @whr             	| happiness            	| World Happiness Score (scale of 0:10)            	|
 | @wef_gender      	| genderequality_index 	| Gender Equality Index (scale of 0:1)             	|
 | @who_infantmort  	| infantmort           	| Infant mortality rate                            	|
 | @who_life        	| birth_MF             	| Life expectancy at birth, males & females        	|
 | @who_life        	| sixty_MF             	| Life expectancy at 60 years, males & females     	|
-| @worldbank_gdp   	| GDP_USD_2018         	| 2016 Gross Domestic Product (valued in $US 2018) 	|
 
 
 ### *Visualizations*
 
 Univariate and sensible bivariate analyses were generated to explore the data.
+
+Exploring the World Happiness Report data:
+
+```{r happinessplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+happiness_hist <- ggplot(data = alldata, aes(happiness)) +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$happiness))))) +
+  xlab("Happiness Score") +
+  ylab("Count") +
+  ggtitle("Happiness Score Distribution")
+happiness_hist
+```
+
+Next, exploring GDP by summary statistics:
+
+```{r GDPsumm, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+GDPsumm <- broom::tidy(round(summary(alldata$GDP_USD_2018 / 1000000), digits = 4)) %>% 
+  kable(format = "markdown")
+GDPsumm
+```
+
+Taking the log transform and plotting:
+
+```{r GDPplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+GDP_hist <- ggplot(data = alldata, aes(x = log(GDP_USD_2018))) +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$GDP_USD_2018))))) +
+  xlab("log(GDP) ($US 2018)") +
+  ylab("Count") +
+  ggtitle("Gross Domestic Product Distribution, Log Transform") +
+  scale_x_continuous(labels = scales::dollar_format(prefix = "$"))
+GDP_hist
+```
 
 Exploring the Human Development Index variables:
 
@@ -710,24 +741,24 @@ HDIcat_bar <- ggplot(data = alldata, aes(x = HDI_cat)) +
 grid.arrange(HDIindex_hist, HDIcat_bar, nrow = 1)
 ```
 
-The top 5 countries by HDI rank are:
+<!-- The top 5 countries by HDI rank are: -->
 
-```{r HDItop, include = TRUE, echo = TRUE, eval = TRUE}
-HDIsub <- alldata %>% 
-  select(country, HDIrank, HDIindex) %>% 
-  arrange(HDIrank) %>% 
-  filter(!is.na(HDIindex) == TRUE) %>% 
-  mutate(HDIindex = round(HDIindex, digits = 4))
-HDItop <- head(HDIsub, 5) %>% kable(format = "markdown")
-HDItop
-```
+<!-- ```{r HDItop, include = TRUE, echo = TRUE, eval = TRUE} -->
+<!-- HDIsub <- alldata %>%  -->
+<!--   select(country, HDIrank, HDIindex) %>%  -->
+<!--   arrange(HDIrank) %>%  -->
+<!--   filter(!is.na(HDIindex) == TRUE) %>%  -->
+<!--   mutate(HDIindex = round(HDIindex, digits = 4)) -->
+<!-- HDItop <- head(HDIsub, 5) %>% kable(format = "markdown") -->
+<!-- HDItop -->
+<!-- ``` -->
 
-and the bottom 5 are:
+<!-- and the bottom 5 are: -->
 
-```{r HDIbot, include = TRUE, echo = TRUE, eval = TRUE}
-HDIbot <- tail(HDIsub, 5) %>% kable(format = "markdown")
-HDIbot
-```
+<!-- ```{r HDIbot, include = TRUE, echo = TRUE, eval = TRUE} -->
+<!-- HDIbot <- tail(HDIsub, 5) %>% kable(format = "markdown") -->
+<!-- HDIbot -->
+<!-- ``` -->
 
 Exploring the Social Progress Index data:
 
@@ -738,17 +769,6 @@ SPI_hist <- ggplot(data = alldata, aes(x = SPI)) +
   ylab("Count") +
   ggtitle("Social Progress Index Distribution")
 SPI_hist
-```
-
-Exploring the World Happiness Report data:
-
-```{r happinessplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
-happiness_hist <- ggplot(data = alldata, aes(happiness)) +
-  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$happiness))))) +
-  xlab("Happiness Score") +
-  ylab("Count") +
-  ggtitle("Happiness Score Distribution")
-happiness_hist
 ```
 
 Exploring the gender equality index data:
@@ -800,32 +820,12 @@ grid.arrange(lifeexp_birth_box, lifeexp_sixty_box, nrow = 1,
                             gp = gpar(fontsize = 16, fontface = "bold", col = "#545454")))
 ```
 
-The summary statistics (in millions) for the GDP data are:
-
-```{r GDPsumm, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
-GDPsumm <- broom::tidy(round(summary(alldata$GDP_USD_2018 / 1000000), digits = 4)) %>% 
-  kable(format = "markdown")
-GDPsumm
-```
-
-Taking the log transform and plotting:
-
-```{r GDPplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
-GDP_hist <- ggplot(data = alldata, aes(x = log(GDP_USD_2018))) +
-  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$GDP_USD_2018))))) +
-  xlab("log(GDP) ($US 2018)") +
-  ylab("Count") +
-  ggtitle("Gross Domestic Product Distribution, Log Transform") +
-  scale_x_continuous(labels = scales::dollar_format(prefix = "$"))
-GDP_hist
-```
-
 Investigating pairwise relationships between continuous variables:
 
 ```{r calc_corrplot, include = TRUE, echo = TRUE, message = FALSE, warning = FALSE, fig.width = 10, fig.height = 8}
 alldata <- alldata %>% mutate(logGDP = log(GDP_USD_2018))
 
-corrplot <- ggpairs(data = alldata, columns = c(4, 6:11, 13),
+corrplot <- ggpairs(data = alldata, columns = c(7, 15, 4, 6, 8:11),
                     title = "Correlation Matrix, Continuous Variables")
 corrplot
 ```
@@ -834,69 +834,9 @@ Strong positive linear relationships are seen between `HDIindex` and `SPI`, `hap
 
 Strong negative relationships are seen between `infantmort` and `birth_MF`, between `HDIindex` and `infantmort`, and between `SPI` and `infantmort`, though the latter two of these may not necessarily be linear.  A strong negative nonlinear relationship is seen between `infantmort` and `sixty_MF`.
 
-<!-- Add one or two interesting country-level plots here (http://stat545.com/block014_factors.html) -->
-
 Since the goal of this analysis is to compare countries with particular focus on the United States, factor-ordered bivariate plots were generated to explore how the countries compare across the variables of interest, with the United States denoted in red.
-
-First, the top and bottom 20 countries were compared by HDI:
-
-```{r HDI_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 6}
-alldata_HDI <- alldata %>%
-  filter(!is.na(HDIindex) == TRUE) %>% 
-  arrange(desc(HDIindex)) %>% 
-  select(HDIindex, country, US, color)
-
-alldata_HDI_top20 <- alldata_HDI %>% head(20)
-alldata_HDI_bot20 <- alldata_HDI %>% tail(20)
-alldata_HDI40 <- bind_rows(alldata_HDI_top20, alldata_HDI_bot20)
-
-colors <- alldata_HDI40$color[order(alldata_HDI40$HDIindex)]
-
-HDI_country_point <- ggplot(data = alldata_HDI40, 
-                            aes(x = HDIindex, y = fct_reorder(country, HDIindex), color = US)) +
-  geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
-  theme(axis.text.y = element_text(color = colors)) +
-  guides(color = FALSE) +
-  xlim(0, 1) +
-  xlab("HDI") +
-  ylab("Country") +
-  ggtitle("Human Development Index by Country, \nTop and Bottom 20 Countries")
-HDI_country_point
-```
-
-The United States ranks twelfth by HDI.
-
-Next, the social progress index:
-
-```{r SPI_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 6}
-alldata_SPI <- alldata %>%
-  filter(!is.na(SPI) == TRUE) %>% 
-  arrange(desc(SPI)) %>% 
-  select(SPI, country, US, color)
-
-alldata_SPI_top20 <- alldata_SPI %>% head(20)
-alldata_SPI_bot20 <- alldata_SPI %>% tail(20)
-alldata_SPI40 <- bind_rows(alldata_SPI_top20, alldata_SPI_bot20)
-
-colors <- alldata_SPI40$color[order(alldata_SPI40$SPI)]
-
-SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI, 
-                                                      y = fct_reorder(country, SPI), color = US)) +
-  geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
-  theme(axis.text.y = element_text(color = colors)) +
-  guides(color = FALSE) +
-  xlim(0, 100) +
-  xlab("SPI") +
-  ylab("Country") +
-  ggtitle("Social Progress Index by Country, \nTop and Bottom 20 Countries")
-SPI_country_point
-```
-
-The United States ranks twentieth by social progress index.
-
-Next, world happiness index:
+ 
+First, the top and bottom 20 countries were compared by World Happiness Index:
 
 ```{r WHR_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 6}
 alldata_WHR <- alldata %>%
@@ -929,9 +869,98 @@ which(alldata_WHR$country == "United States")
 
 The United States is not among the top 20 countries in terms of happiness; it ranks 21st.
 
+Next, exploring GDP by country (code for this and subsequent country-level plots not shown for brevity):
+
+```{r GDP_country, echo = FALSE, fig.height = 6, fig.width = 9}
+alldata_GDP <- alldata %>%
+  filter(!is.na(GDP_USD_2018) == TRUE) %>% 
+  arrange(desc(GDP_USD_2018)) %>% 
+  select(GDP_USD_2018, country, US, color)
+
+alldata_GDP_top20 <- alldata_GDP %>% head(20)
+alldata_GDP_bot20 <- alldata_GDP %>% tail(20)
+alldata_GDP_40 <- bind_rows(alldata_GDP_top20, alldata_GDP_bot20)
+
+colors <- alldata_GDP_40$color[order(alldata_GDP_40$GDP_USD_2018)]
+
+GDP_country_point <- ggplot(data = alldata_GDP_40, 
+                            aes(x = log(GDP_USD_2018), 
+                                y = fct_reorder(country, GDP_USD_2018), 
+                                color = US)) +
+  geom_point() +
+  scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
+  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  theme(axis.text.y = element_text(color = colors)) +
+  guides(color = FALSE) +
+  xlab("log(Gross Domestic Product) ($US 2018)") +
+  ylab("Country") +
+  ggtitle("Gross Domestic Product by Country, Log Scale, \nTop and Bottom 20 Countries")
+GDP_country_point
+```
+
+The United States has the world's largest GDP.
+
+Next, the Human Development Index:
+
+```{r HDI_country, echo = FALSE, fig.height = 6, fig.width = 6}
+alldata_HDI <- alldata %>%
+  filter(!is.na(HDIindex) == TRUE) %>% 
+  arrange(desc(HDIindex)) %>% 
+  select(HDIindex, country, US, color)
+
+alldata_HDI_top20 <- alldata_HDI %>% head(20)
+alldata_HDI_bot20 <- alldata_HDI %>% tail(20)
+alldata_HDI40 <- bind_rows(alldata_HDI_top20, alldata_HDI_bot20)
+
+colors <- alldata_HDI40$color[order(alldata_HDI40$HDIindex)]
+
+HDI_country_point <- ggplot(data = alldata_HDI40, 
+                            aes(x = HDIindex, y = fct_reorder(country, HDIindex), color = US)) +
+  geom_point() +
+  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  theme(axis.text.y = element_text(color = colors)) +
+  guides(color = FALSE) +
+  xlim(0, 1) +
+  xlab("HDI") +
+  ylab("Country") +
+  ggtitle("Human Development Index by Country, \nTop and Bottom 20 Countries")
+HDI_country_point
+```
+
+The United States ranks twelfth by HDI.
+
+Next, the social progress index:
+
+```{r SPI_country, echo = FALSE, fig.height = 6, fig.width = 6}
+alldata_SPI <- alldata %>%
+  filter(!is.na(SPI) == TRUE) %>% 
+  arrange(desc(SPI)) %>% 
+  select(SPI, country, US, color)
+
+alldata_SPI_top20 <- alldata_SPI %>% head(20)
+alldata_SPI_bot20 <- alldata_SPI %>% tail(20)
+alldata_SPI40 <- bind_rows(alldata_SPI_top20, alldata_SPI_bot20)
+
+colors <- alldata_SPI40$color[order(alldata_SPI40$SPI)]
+
+SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI, 
+                                                      y = fct_reorder(country, SPI), color = US)) +
+  geom_point() +
+  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  theme(axis.text.y = element_text(color = colors)) +
+  guides(color = FALSE) +
+  xlim(0, 100) +
+  xlab("SPI") +
+  ylab("Country") +
+  ggtitle("Social Progress Index by Country, \nTop and Bottom 20 Countries")
+SPI_country_point
+```
+
+The United States ranks twentieth in social progress.
+
 Exploring gender equality:
 
-```{r gender_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 6}
+```{r gender_country, echo = FALSE, fig.height = 6, fig.width = 6}
 alldata_gender <- alldata %>%
   filter(!is.na(genderequality_index) == TRUE) %>% 
   arrange(desc(genderequality_index)) %>% 
@@ -964,8 +993,44 @@ which(alldata_gender$country == "United States")
 
 The United States is not among the top 20 countries in terms of gender equality; it ranks 45th.
 
+Examining infant mortality:
 
-```{r lifeexp_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 12}
+```{r infantmort_country, echo = FALSE, fig.height = 6, fig.width = 6}
+alldata_infantmort <- alldata %>%
+  filter(!is.na(infantmort) == TRUE) %>% 
+  arrange(desc(infantmort)) %>% 
+  select(infantmort, country, US, color)
+
+alldata_infantmort_top20 <- alldata_infantmort %>% head(20)
+alldata_infantmort_bot20 <- alldata_infantmort %>% tail(20)
+alldata_infantmort_40 <- bind_rows(alldata_infantmort_top20, alldata_infantmort_bot20)
+
+colors <- alldata_infantmort_40$color[order(alldata_infantmort_40$infantmort)]
+
+infantmort_country_point <- ggplot(data = alldata_infantmort_40, 
+                                   aes(x = infantmort, 
+                                       y = fct_reorder(country, infantmort), 
+                                       color = US)) +
+  geom_point() +
+  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  theme(axis.text.y = element_text(color = colors)) +
+  guides(color = FALSE) +
+  xlab("Infant Mortality Rate") +
+  ylab("Country") +
+  ggtitle("Infant Mortality Rate, \nTop and Bottom 20 Countries")
+infantmort_country_point
+```
+
+```{r infantmort_rank, include = TRUE, echo = TRUE}
+alldata_infantmort_asc <- alldata_infantmort %>% arrange(infantmort)
+which(alldata_infantmort_asc$country == "United States")
+```
+
+The United States has the world's 46th lowest infant mortality rate.
+
+Finally, exploring life expectancy:
+
+```{r lifeexp_country, echo = FALSE, fig.height = 6, fig.width = 12}
 alldata_lifeexp <- alldata %>%
   filter(!is.na(birth_MF) == TRUE & !is.na(sixty_MF) == TRUE)
 
@@ -1027,71 +1092,6 @@ which(alldata_lifeexp_sixty$country == "United States")
 
 Once again, the United States is not among the top 20 countries for life expectancy, ranking 34th and 31st respectively for life expectancy at birth and at 60 years of age.
 
-Exploring GDP by country:
-
-```{r GDP_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 9}
-alldata_GDP <- alldata %>%
-  filter(!is.na(GDP_USD_2018) == TRUE) %>% 
-  arrange(desc(GDP_USD_2018)) %>% 
-  select(GDP_USD_2018, country, US, color)
-
-alldata_GDP_top20 <- alldata_GDP %>% head(20)
-alldata_GDP_bot20 <- alldata_GDP %>% tail(20)
-alldata_GDP_40 <- bind_rows(alldata_GDP_top20, alldata_GDP_bot20)
-
-colors <- alldata_GDP_40$color[order(alldata_GDP_40$GDP_USD_2018)]
-
-GDP_country_point <- ggplot(data = alldata_GDP_40, 
-                            aes(x = log(GDP_USD_2018), 
-                                y = fct_reorder(country, GDP_USD_2018), 
-                                color = US)) +
-  geom_point() +
-  scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
-  theme(axis.text.y = element_text(color = colors)) +
-  guides(color = FALSE) +
-  xlab("log(Gross Domestic Product) ($US 2018)") +
-  ylab("Country") +
-  ggtitle("Gross Domestic Product by Country, Log Scale, \nTop and Bottom 20 Countries")
-GDP_country_point
-```
-
-The United States has the world's largest GDP.
-
-Finally, examining infant mortality:
-
-```{r infantmort_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 6}
-alldata_infantmort <- alldata %>%
-  filter(!is.na(infantmort) == TRUE) %>% 
-  arrange(desc(infantmort)) %>% 
-  select(infantmort, country, US, color)
-
-alldata_infantmort_top20 <- alldata_infantmort %>% head(20)
-alldata_infantmort_bot20 <- alldata_infantmort %>% tail(20)
-alldata_infantmort_40 <- bind_rows(alldata_infantmort_top20, alldata_infantmort_bot20)
-
-colors <- alldata_infantmort_40$color[order(alldata_infantmort_40$infantmort)]
-
-infantmort_country_point <- ggplot(data = alldata_infantmort_40, 
-                                   aes(x = infantmort, 
-                                       y = fct_reorder(country, infantmort), 
-                                       color = US)) +
-  geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
-  theme(axis.text.y = element_text(color = colors)) +
-  guides(color = FALSE) +
-  xlab("Infant Mortality Rate") +
-  ylab("Country") +
-  ggtitle("Infant Mortality Rate, \nTop and Bottom 20 Countries")
-infantmort_country_point
-```
-
-```{r infantmort_rank, include = TRUE, echo = TRUE}
-alldata_infantmort_asc <- alldata_infantmort %>% arrange(infantmort)
-which(alldata_infantmort_asc$country == "United States")
-```
-
-The United States has the world's 46th lowest infant mortality rate.
 
 ### **Clustering Analysis**
 
