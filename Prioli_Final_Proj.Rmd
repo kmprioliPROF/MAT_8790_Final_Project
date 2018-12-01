@@ -74,13 +74,14 @@ references:
 ## **Methods**
 
 <!-- Notes
-  * Limited dataset to 2016, except for OECD income inequality data, which was most complete for 2015
-  * May want to explain methods & show one example for each import/wrangle/test against countries, then hide code for the rest, indicating that full code is either in appendix or on github (will make report too long otherwise)
+  * Limited dataset to 2016
   * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
   * Need to better organize flow of report (some results are in Methods, etc)
   * Need to more fully narrate steps and interpretations of output
+  * Add to Discussion the recent report about another decrease in US life expectancy
   
   * Limitations:
+  
 
   -->
 
@@ -142,7 +143,6 @@ First, importing and wrangling the HDI data:
 # Importing raw data
 
 HDIraw <- read_xlsx("data/HDIdata2018.xlsx", sheet = "Table 2")
-HDIraw
 
 # Selecting columns of interest
 
@@ -658,6 +658,9 @@ alldata <- joinsub %>%
     country == "United States" ~ "red",
     TRUE                       ~ "#545454"
   ))
+
+alldata <- alldata[c(1:2, 13:14, 7, 12, 3:6, 8:11)]
+
 len <- dim(alldata)[[1]]
 
 # write_csv(alldata, paste0("data/alldata_", lubridate::today(),".csv"))  # Uncomment to export data
@@ -741,25 +744,6 @@ HDIcat_bar <- ggplot(data = alldata, aes(x = HDI_cat)) +
 grid.arrange(HDIindex_hist, HDIcat_bar, nrow = 1)
 ```
 
-<!-- The top 5 countries by HDI rank are: -->
-
-<!-- ```{r HDItop, include = TRUE, echo = TRUE, eval = TRUE} -->
-<!-- HDIsub <- alldata %>%  -->
-<!--   select(country, HDIrank, HDIindex) %>%  -->
-<!--   arrange(HDIrank) %>%  -->
-<!--   filter(!is.na(HDIindex) == TRUE) %>%  -->
-<!--   mutate(HDIindex = round(HDIindex, digits = 4)) -->
-<!-- HDItop <- head(HDIsub, 5) %>% kable(format = "markdown") -->
-<!-- HDItop -->
-<!-- ``` -->
-
-<!-- and the bottom 5 are: -->
-
-<!-- ```{r HDIbot, include = TRUE, echo = TRUE, eval = TRUE} -->
-<!-- HDIbot <- tail(HDIsub, 5) %>% kable(format = "markdown") -->
-<!-- HDIbot -->
-<!-- ``` -->
-
 Exploring the Social Progress Index data:
 
 ```{r SPIplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
@@ -825,7 +809,7 @@ Investigating pairwise relationships between continuous variables:
 ```{r calc_corrplot, include = TRUE, echo = TRUE, message = FALSE, warning = FALSE, fig.width = 10, fig.height = 8}
 alldata <- alldata %>% mutate(logGDP = log(GDP_USD_2018))
 
-corrplot <- ggpairs(data = alldata, columns = c(7, 15, 4, 6, 8:11),
+corrplot <- ggpairs(data = alldata, columns = c(5, 15, 8, 10:14),
                     title = "Correlation Matrix, Continuous Variables")
 corrplot
 ```
@@ -836,7 +820,7 @@ Strong negative relationships are seen between `infantmort` and `birth_MF`, betw
 
 Since the goal of this analysis is to compare countries with particular focus on the United States, factor-ordered bivariate plots were generated to explore how the countries compare across the variables of interest, with the United States denoted in red.
  
-First, the top and bottom 20 countries were compared by World Happiness Index:
+First, the top and bottom 20 countries were compared by World Happiness Score:
 
 ```{r WHR_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 6}
 alldata_WHR <- alldata %>%
@@ -857,9 +841,9 @@ WHR_country_point <- ggplot(data = alldata_WHR_40,
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlim(0, 10) +
-  xlab("World Happiness") +
+  xlab("World Happiness Score") +
   ylab("Country") +
-  ggtitle("World Happiness by Country, \nTop and Bottom 20 Countries")
+  ggtitle("World Happiness Score by Country, \nTop and Bottom 20 Countries")
 WHR_country_point
 ```
 
@@ -1095,6 +1079,48 @@ Once again, the United States is not among the top 20 countries for life expecta
 
 ### **Clustering Analysis**
 
+The Human Development Index categorizes the world's countries into four developmental levels (low, medium, high, and very high); thus *k*-means clustering analysis was performed assuming 4 clusters.  Additionally, missing values were excluded to ensure the clustering algorithm would run, and a function was written to subset the clustering dataset (named `clusterdata`) to the variables of interest for each *k*-means analysis.  On each output plot, countries in the "Very High" HDI category are denoted with an empty `geom_point()`, and the United States was identified by an enlarged point.
+
+```{r NAomit, include = FALSE, echo = FALSE, eval = TRUE}
+clusterdata <- alldata %>%
+  na.omit()
+
+# write_csv(clusterdata, "data/clusterdata.csv")  # Uncomment to export clustering dataset
+```
+
+```{r kmeans_fxn, include = TRUE, echo = TRUE}
+kmdf <- function(data, x, y, z){
+  kmdata <- data %>% 
+    select(x, y, z)
+  kmdata <- return(kmdata)
+}
+```
+
+Clustering happiness versus log GDP:
+
+```{r kmeans_happiness_GDP, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
+kmdata <- kmdf(clusterdata, "country", "happiness", "logGDP")
+
+set.seed(19811221)
+km_happiness_GDP <- kmeans(kmdata[, 2:3], 4)
+km_happiness_GDP_cluster <- as.factor(km_happiness_GDP$cluster)
+
+clusterdata_1 <- cbind(clusterdata, km_happiness_GDP_cluster)
+
+km_happiness_GDP_plot <- ggplot(data = clusterdata_1, 
+                                aes(x = logGDP, y = happiness, 
+                                    color = km_happiness_GDP_cluster,
+                                    size = US,
+                                    shape = HDI_cat)) +
+  geom_point() +
+  ylim(0, 10) +
+  scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
+  guides(color = FALSE, size = FALSE) +
+  xlab("log(GDP) ($US 2018)") +
+  ylab("World Happiness Score") +
+  ggtitle("Cluster Analysis, World Happiness Score vs. Log-Scale GDP")
+km_happiness_GDP_plot
+```
 
 
 ## **Results**
