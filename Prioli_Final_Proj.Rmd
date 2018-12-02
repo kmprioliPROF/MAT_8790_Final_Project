@@ -75,6 +75,10 @@ references:
 
 <!-- Notes
   * Limited dataset to 2016
+  * Need to explain the following:
+      * Basics of what's contained in social progress index, world happiness score, human development index
+      * Basics of k-means clustering
+  * Do a sensitivity analysis on cluster number
   * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
   * Need to better organize flow of report (some results are in Methods, etc)
   * Need to more fully narrate steps and interpretations of output
@@ -659,7 +663,7 @@ alldata <- joinsub %>%
     TRUE                       ~ "#545454"
   ))
 
-alldata <- alldata[c(1:2, 13:14, 7, 12, 3:6, 8:11)]
+alldata <- alldata[c(1:2, 13:14, 6, 12, 3:5, 7:11)]
 
 len <- dim(alldata)[[1]]
 
@@ -675,38 +679,38 @@ rm(list = c("joindata_1", "joindata_2", "joindata_3", "joindata_4",
 
 The final dataframe, titled `alldata`, contains the following:
 
-| **Source**       	| **Variable Name**    	| **Description**                                  	|
-|------------------	|----------------------	|--------------------------------------------------	|
-| @whr             	| happiness            	| World Happiness Score (scale of 0:10)            	|
-| @worldbank_gdp   	| GDP_USD_2018         	| 2016 Gross Domestic Product (valued in $US 2018) 	|
-| @un_dvlpt        	| HDIrank              	| Human Development Index ranking                  	|
-| @un_dvlpt        	| HDIindex             	| HDI index value (scale of 0:1)                   	|
-| @un_dvlpt        	| HDI_cat              	| HDI index category (5 levels)                    	|
-| @socialprog      	| SPI                  	| Social Progress Index value (scale of 0:100)     	|
-| @wef_gender      	| genderequality_index 	| Gender Equality Index (scale of 0:1)             	|
-| @who_infantmort  	| infantmort           	| Infant mortality rate                            	|
-| @who_life        	| birth_MF             	| Life expectancy at birth, males & females        	|
-| @who_life        	| sixty_MF             	| Life expectancy at 60 years, males & females     	|
+| **Source**       	              | **Variable Name**    	| **Description**                                  	|
+|-------------------------------- |----------------------	|--------------------------------------------------	|
+| @socialprog      	              | SPI                  	| Social Progress Index value (scale of 0:100)     	|
+| @worldbank_gdp   	              | GDP_USD_2018         	| 2016 Gross Domestic Product (valued in $US 2018) 	|
+| @un_dvlpt        	              | HDIrank              	| Human Development Index ranking                  	|
+| @un_dvlpt        	              | HDIindex             	| HDI index value (scale of 0:1)                   	|
+| @un_dvlpt        	              | HDI_cat              	| HDI index category (5 levels)                    	|
+| @whr             	              | happiness            	| World Happiness Score (scale of 0:10)            	|
+| @wef_gender      	              | genderequality_index 	| Gender Equality Index (scale of 0:1)             	|
+| @who_infantmort  	              | infantmort           	| Infant mortality rate                            	|
+| @who_life        	              | birth_MF             	| Life expectancy at birth, males & females        	|
+| @who_life        	              | sixty_MF             	| Life expectancy at 60 years, males & females     	|
 
 
 ### *Visualizations*
 
 Univariate and sensible bivariate analyses were generated to explore the data.
 
-Exploring the World Happiness Report data:
+Exploring the Social Progress Index data:
 
-```{r happinessplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
-happiness_hist <- ggplot(data = alldata, aes(happiness)) +
-  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$happiness))))) +
-  xlab("Happiness Score") +
+```{r SPIplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
+SPI_hist <- ggplot(data = alldata, aes(x = SPI)) +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$SPI))))) +
+  xlab("Social Progress Index") +
   ylab("Count") +
-  ggtitle("Happiness Score Distribution")
-happiness_hist
+  ggtitle("Social Progress Index Distribution")
+SPI_hist
 ```
 
 Next, exploring GDP by summary statistics:
 
-```{r GDPsumm, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+```{r GDPsumm, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
 GDPsumm <- broom::tidy(round(summary(alldata$GDP_USD_2018 / 1000000), digits = 4)) %>% 
   kable(format = "markdown")
 GDPsumm
@@ -714,7 +718,7 @@ GDPsumm
 
 Taking the log transform and plotting:
 
-```{r GDPplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+```{r GDPplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
 GDP_hist <- ggplot(data = alldata, aes(x = log(GDP_USD_2018))) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$GDP_USD_2018))))) +
   xlab("log(GDP) ($US 2018)") +
@@ -726,7 +730,7 @@ GDP_hist
 
 Exploring the Human Development Index variables:
 
-```{r HDIplots, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
+```{r HDIplots, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 HDIindex_hist <- ggplot(data = alldata, aes(x = HDIindex)) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$HDIindex))))) +
   xlab("Human Development Index") +
@@ -744,20 +748,20 @@ HDIcat_bar <- ggplot(data = alldata, aes(x = HDI_cat)) +
 grid.arrange(HDIindex_hist, HDIcat_bar, nrow = 1)
 ```
 
-Exploring the Social Progress Index data:
+Exploring the World Happiness Report data:
 
-```{r SPIplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
-SPI_hist <- ggplot(data = alldata, aes(x = SPI)) +
-  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$SPI))))) +
-  xlab("Social Progress Index") +
+```{r happinessplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
+happiness_hist <- ggplot(data = alldata, aes(happiness)) +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$happiness))))) +
+  xlab("Happiness Score") +
   ylab("Count") +
-  ggtitle("Social Progress Index Distribution")
-SPI_hist
+  ggtitle("Happiness Score Distribution")
+happiness_hist
 ```
 
 Exploring the gender equality index data:
 
-```{r genderplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+```{r genderplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
 gender_hist <- ggplot(data = alldata, aes(x = genderequality_index)) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$genderequality_index))))) +
   xlab("Gender Equality Index") +
@@ -768,7 +772,7 @@ gender_hist
 
 Exploring the WHO infant mortality rate data:
 
-```{r infantmortplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+```{r infantmortplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
 infantmort_hist <- ggplot(data = alldata, aes(x = infantmort)) + 
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$genderequality_index))))) +
   xlab("Probability of Infant Mortality") +
@@ -779,10 +783,10 @@ infantmort_hist
 
 Exploring the WHO life expectancy data:
 
-```{r lifeexpplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
+```{r lifeexpplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 lifeexp_birth_box <- ggplot(data = alldata, aes(y = birth_MF)) +
   geom_boxplot() +
-  ylim(0, 100) +
+  ylim(50, 100) +
   ylab("Total Life Expectancy (years)") +
   ggtitle("...at Birth") +
   theme(axis.text.x = element_blank(),
@@ -790,7 +794,7 @@ lifeexp_birth_box <- ggplot(data = alldata, aes(y = birth_MF)) +
 
 lifeexp_sixty_box <- ggplot(data = alldata, aes(y = 60 + sixty_MF)) +
   geom_boxplot() +
-  ylim(0, 100) +
+  ylim(50, 100) +
   ylab("") +
   ggtitle("...at Age 60") +
   theme(axis.text.x = element_blank(),
@@ -819,39 +823,35 @@ Strong positive linear relationships are seen between `HDIindex` and `SPI`, `hap
 Strong negative relationships are seen between `infantmort` and `birth_MF`, between `HDIindex` and `infantmort`, and between `SPI` and `infantmort`, though the latter two of these may not necessarily be linear.  A strong negative nonlinear relationship is seen between `infantmort` and `sixty_MF`.
 
 Since the goal of this analysis is to compare countries with particular focus on the United States, factor-ordered bivariate plots were generated to explore how the countries compare across the variables of interest, with the United States denoted in red.
- 
-First, the top and bottom 20 countries were compared by World Happiness Score:
 
-```{r WHR_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 6}
-alldata_WHR <- alldata %>%
-  filter(!is.na(happiness) == TRUE) %>% 
-  arrange(desc(happiness)) %>% 
-  select(happiness, country, US, color)
+First, the top and bottom 20 countries were compared by Social Progress Index:
 
-alldata_WHR_top20 <- alldata_WHR %>% head(20)
-alldata_WHR_bot20 <- alldata_WHR %>% tail(20)
-alldata_WHR_40 <- bind_rows(alldata_WHR_top20, alldata_WHR_bot20)
+```{r SPI_country, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 6}
+alldata_SPI <- alldata %>%
+  filter(!is.na(SPI) == TRUE) %>% 
+  arrange(desc(SPI)) %>% 
+  select(SPI, country, US, color)
 
-colors <- alldata_WHR_40$color[order(alldata_WHR_40$happiness)]
+alldata_SPI_top20 <- alldata_SPI %>% head(20)
+alldata_SPI_bot20 <- alldata_SPI %>% tail(20)
+alldata_SPI40 <- bind_rows(alldata_SPI_top20, alldata_SPI_bot20)
 
-WHR_country_point <- ggplot(data = alldata_WHR_40, 
-                            aes(x = happiness, y = fct_reorder(country, happiness), color = US)) +
+colors <- alldata_SPI40$color[order(alldata_SPI40$SPI)]
+
+SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI, 
+                                                      y = fct_reorder(country, SPI), color = US)) +
   geom_point() +
   scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
-  xlim(0, 10) +
-  xlab("World Happiness Score") +
+  xlim(0, 100) +
+  xlab("SPI") +
   ylab("Country") +
-  ggtitle("World Happiness Score by Country, \nTop and Bottom 20 Countries")
-WHR_country_point
+  ggtitle("Social Progress Index by Country, \nTop and Bottom 20 Countries")
+SPI_country_point
 ```
 
-```{r WHR_rank, include = TRUE, echo = TRUE}
-which(alldata_WHR$country == "United States")
-```
-
-The United States is not among the top 20 countries in terms of happiness; it ranks 21st.
+The United States ranks twentieth in social progress.
 
 Next, exploring GDP by country (code for this and subsequent country-level plots not shown for brevity):
 
@@ -883,6 +883,39 @@ GDP_country_point
 ```
 
 The United States has the world's largest GDP.
+ 
+Next, World Happiness Score:
+
+```{r WHR_country, echo = FALSE, fig.height = 6, fig.width = 6}
+alldata_WHR <- alldata %>%
+  filter(!is.na(happiness) == TRUE) %>% 
+  arrange(desc(happiness)) %>% 
+  select(happiness, country, US, color)
+
+alldata_WHR_top20 <- alldata_WHR %>% head(20)
+alldata_WHR_bot20 <- alldata_WHR %>% tail(20)
+alldata_WHR_40 <- bind_rows(alldata_WHR_top20, alldata_WHR_bot20)
+
+colors <- alldata_WHR_40$color[order(alldata_WHR_40$happiness)]
+
+WHR_country_point <- ggplot(data = alldata_WHR_40, 
+                            aes(x = happiness, y = fct_reorder(country, happiness), color = US)) +
+  geom_point() +
+  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  theme(axis.text.y = element_text(color = colors)) +
+  guides(color = FALSE) +
+  xlim(0, 10) +
+  xlab("World Happiness Score") +
+  ylab("Country") +
+  ggtitle("World Happiness Score by Country, \nTop and Bottom 20 Countries")
+WHR_country_point
+```
+
+```{r WHR_rank, include = TRUE, echo = TRUE}
+which(alldata_WHR$country == "United States")
+```
+
+The United States is not among the top 20 countries in terms of happiness; it ranks 21st.
 
 Next, the Human Development Index:
 
@@ -912,35 +945,6 @@ HDI_country_point
 ```
 
 The United States ranks twelfth by HDI.
-
-Next, the social progress index:
-
-```{r SPI_country, echo = FALSE, fig.height = 6, fig.width = 6}
-alldata_SPI <- alldata %>%
-  filter(!is.na(SPI) == TRUE) %>% 
-  arrange(desc(SPI)) %>% 
-  select(SPI, country, US, color)
-
-alldata_SPI_top20 <- alldata_SPI %>% head(20)
-alldata_SPI_bot20 <- alldata_SPI %>% tail(20)
-alldata_SPI40 <- bind_rows(alldata_SPI_top20, alldata_SPI_bot20)
-
-colors <- alldata_SPI40$color[order(alldata_SPI40$SPI)]
-
-SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI, 
-                                                      y = fct_reorder(country, SPI), color = US)) +
-  geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
-  theme(axis.text.y = element_text(color = colors)) +
-  guides(color = FALSE) +
-  xlim(0, 100) +
-  xlab("SPI") +
-  ylab("Country") +
-  ggtitle("Social Progress Index by Country, \nTop and Bottom 20 Countries")
-SPI_country_point
-```
-
-The United States ranks twentieth in social progress.
 
 Exploring gender equality:
 
@@ -1098,29 +1102,162 @@ kmdf <- function(data, x, y, z){
 
 Clustering happiness versus log GDP:
 
-```{r kmeans_happiness_GDP, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
-kmdata <- kmdf(clusterdata, "country", "happiness", "logGDP")
+```{r kmeans_SPI_GDP, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
+kmdata <- kmdf(clusterdata, "country", "SPI", "logGDP")
 
 set.seed(19811221)
-km_happiness_GDP <- kmeans(kmdata[, 2:3], 4)
-km_happiness_GDP_cluster <- as.factor(km_happiness_GDP$cluster)
+km_SPI_GDP <- kmeans(kmdata[, 2:3], 4)
+km_SPI_GDP_cluster <- as.factor(km_SPI_GDP$cluster)
 
-clusterdata_1 <- cbind(clusterdata, km_happiness_GDP_cluster)
+clusterdata1 <- cbind(clusterdata, km_SPI_GDP_cluster)
 
-km_happiness_GDP_plot <- ggplot(data = clusterdata_1, 
-                                aes(x = logGDP, y = happiness, 
-                                    color = km_happiness_GDP_cluster,
+km_SPI_GDP_plot <- ggplot(data = clusterdata1, 
+                          aes(x = logGDP, y = SPI, 
+                              color = km_SPI_GDP_cluster,
+                              size = US,
+                              shape = HDI_cat)) +
+  geom_point() +
+  ylim(0, 100) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
+  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  xlab("log(GDP) ($US 2018)") +
+  ylab("Social Progress Index") +
+  ggtitle("Cluster Analysis, Social Progress Index vs. Log-Scale GDP")
+km_SPI_GDP_plot
+```
+
+Clustering social progress versus happiness (code for this and subsequent clustering not shown for brevity):
+
+```{r kmeans_SPI_happiness, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
+kmdata <- kmdf(clusterdata, "country", "SPI", "happiness")
+
+set.seed(19811221)
+km_SPI_happiness <- kmeans(kmdata[, 2:3], 4)
+km_SPI_happiness_cluster <- as.factor(km_SPI_happiness$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_SPI_happiness_cluster)
+
+km_SPI_happiness_plot <- ggplot(data = clusterdata1, 
+                                aes(x = happiness, y = SPI, 
+                                    color = km_SPI_happiness_cluster,
                                     size = US,
                                     shape = HDI_cat)) +
   geom_point() +
-  ylim(0, 10) +
-  scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
-  guides(color = FALSE, size = FALSE) +
-  xlab("log(GDP) ($US 2018)") +
-  ylab("World Happiness Score") +
-  ggtitle("Cluster Analysis, World Happiness Score vs. Log-Scale GDP")
-km_happiness_GDP_plot
+  ylim(0, 100) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  xlab("World Happiness Score") +
+  ylab("Social Progress Index") +
+  ggtitle("Cluster Analysis, Social Progress Index vs. World Happiness Score")
+km_SPI_happiness_plot
 ```
+
+Clustering social progress versus gender equality:
+
+```{r kmeans_SPI_gender, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
+kmdata <- kmdf(clusterdata, "country", "SPI", "genderequality_index")
+
+set.seed(19811221)
+km_SPI_gender <- kmeans(kmdata[, 2:3], 4)
+km_SPI_gender_cluster <- as.factor(km_SPI_gender$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_SPI_gender_cluster)
+
+km_SPI_gender_plot <- ggplot(data = clusterdata1, 
+                                aes(x = genderequality_index, y = SPI, 
+                                    color = km_SPI_gender_cluster,
+                                    size = US,
+                                    shape = HDI_cat)) +
+  geom_point() +
+  ylim(0, 100) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  xlab("Gender Equality Index") +
+  ylab("Social Progress Index") +
+  ggtitle("Cluster Analysis, Social Progress Index vs. Gender Equality Index")
+km_SPI_gender_plot
+```
+
+Clustering social progress versus infant mortality:
+
+```{r kmeans_SPI_infantmort, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
+kmdata <- kmdf(clusterdata, "country", "SPI", "infantmort")
+
+set.seed(19811221)
+km_SPI_infantmort <- kmeans(kmdata[, 2:3], 4)
+km_SPI_infantmort_cluster <- as.factor(km_SPI_infantmort$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_SPI_infantmort_cluster)
+
+km_SPI_infantmort_plot <- ggplot(data = clusterdata1, 
+                                aes(x = infantmort, y = SPI, 
+                                    color = km_SPI_infantmort_cluster,
+                                    size = US,
+                                    shape = HDI_cat)) +
+  geom_point() +
+  ylim(0, 100) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  xlab("Infant Mortality Rate") +
+  ylab("Social Progress Index") +
+  ggtitle("Cluster Analysis, Social Progress Index vs. Infant Mortality Rate")
+km_SPI_infantmort_plot
+```
+
+Clustering social progress versus life expectancy:
+
+```{r kmeans_SPI_lifeexp, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 6}
+kmdata <- kmdf(clusterdata, "country", "SPI", "birth_MF")
+
+set.seed(19811221)
+km_SPI_birth_MF <- kmeans(kmdata[, 2:3], 4)
+km_SPI_birth_MF_cluster <- as.factor(km_SPI_birth_MF$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_SPI_birth_MF_cluster)
+
+km_SPI_birth_MF_plot <- ggplot(data = clusterdata1, 
+                               aes(x = birth_MF, y = SPI, 
+                                   color = km_SPI_birth_MF_cluster,
+                                   size = US,
+                                   shape = HDI_cat)) +
+  geom_point() +
+  xlim(50, 90) +
+  ylim(0, 100) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  guides(color = FALSE, size = FALSE, shape = FALSE) +
+  xlab("Total Life Expectancy at Birth (years)") +
+  ylab("Social Progress Index") +
+  ggtitle("...at Birth")
+
+kmdata <- kmdf(clusterdata, "country", "SPI", "sixty_MF")
+
+set.seed(19811221)
+km_SPI_sixty_MF <- kmeans(kmdata[, 2:3], 4)
+km_SPI_sixty_MF_cluster <- as.factor(km_SPI_sixty_MF$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_SPI_sixty_MF_cluster)
+
+km_SPI_sixty_MF_plot <- ggplot(data = clusterdata1, 
+                                aes(x = 60 + sixty_MF, y = SPI, 
+                                    color = km_SPI_sixty_MF_cluster,
+                                    size = US,
+                                    shape = HDI_cat)) +
+  geom_point() +
+  xlim(50, 90) +
+  ylim(0, 100) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE, nrow = 1)) +
+  theme(legend.position = "bottom") +
+  xlab("Total Life Expectancy at Age Sixty (years)") +
+  ylab("Social Progress Index") +
+  ggtitle("...at Age 60")
+
+grid.arrange(km_SPI_birth_MF_plot, km_SPI_sixty_MF_plot, nrow = 2,
+             top = textGrob("Cluster Analysis, Social Progress Index vs. Total Life Expectancy...",
+                            gp = gpar(fontsize = 16, fontface = "bold", col = "#545454")))
+```
+
 
 
 ## **Results**
