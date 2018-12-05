@@ -61,7 +61,8 @@ server <- function(input, output, session) {
                                       y = selectedData()[[2]], 
                                       color = factor(clusters()$cluster))) +
       geom_point(size = 3) +
-      scale_color_manual(values = wes)  
+      scale_color_manual(values = wes) +
+      guides(color = guide_legend(title = "Cluster"))
   })
   
 }
