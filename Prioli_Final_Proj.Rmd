@@ -7,6 +7,21 @@ output:
   html_document: default
 geometry: margin = 0.5in
 references:
+- URL: https://www.cdc.gov/nchs/products/databriefs/db328.htm
+  author:
+    - family: Murphy
+      given: Sherry L.
+    - family: Xu
+      given: Jiaquan
+    - family: Kochanek
+      given: Kenneth D.
+    - family: Arias
+      given: Elizabeth
+  id: cdc_lifeexp
+  issued:
+      year: 2018
+  title: Mortality in the United States, 2017. NCHS Data Brief, no 328
+  publisher: National Center for Health Statistics
 - URL: https://github.com/kmprioliPROF/MAT_8790_Final_Project
   author:
   - family: Prioli
@@ -37,6 +52,13 @@ references:
   issued:
     year: 2016
   title: Gender Equality
+- URL: http://reports.weforum.org/global-gender-gap-report-2016/measuring-the-global-gender-gap/
+  author:
+  - family: World Economic Forum
+  id: wef_gender_desc
+  issued:
+    year: 2016
+  title: Measuring the Global Gender Gap
 - URL: https://data.worldbank.org/indicator/ny.gdp.mktp.cd?view=map&year_high_desc=true 
   author:
   - family: The World Bank
@@ -51,6 +73,13 @@ references:
   issued:
     year: 2018
   title: Human Development Index
+- URL: http://hdr.undp.org/en/content/human-development-index-hdi
+  author:
+  - family:  The United Nations Development Programme
+  id: un_dvlpt_HDIdesc
+  issued:
+    year: 2018
+  title: Human Development Reports - Human Development Index (HDI)
 - URL: https://www.socialprogress.org/?tab=4
   author:
   - family: Social Progress Imperative
@@ -58,25 +87,30 @@ references:
   issued:
     year: 2018
   title: Social Progress Index
+- URL: https://www.socialprogress.org/index
+  author:
+  - family: Social Progress Imperative
+  id: socialprog_desc
+  issued:
+    year: 2018
+  title:  Social Progress Index - Overview
 - URL: http://worldhappiness.report/ed/2018/
   author:
-  - family: World Happiness Report
+  - family: Helliwell
+    given: John F.
+  - family: Layard
+    given: Richard
+  - family: Sachs
+    given: Jeffrey D.
   id: whr
   issued:
     year: 2018
   title: World Happiness Report
 ---
 
-## **Background**
-
-
-
-## **Methods**
-
 <!-- Notes
   * Limited dataset to 2016
   * Need to explain the following:
-      * Basics of what's contained in social progress index, world happiness score, human development index
       * Basics of k-means clustering
   * Do a sensitivity analysis on cluster number
   * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
@@ -88,6 +122,62 @@ references:
   
 
   -->
+
+## **Abstract**
+
+
+## **Background**
+
+The Centers for Disease Control and Prevention (CDC) has recently issued a report indicating that life expectancy in the United States has decreased in 2017 as compared to 2016, with the overwhelming majority of deaths caused by heart disease and cancer, arguably preventable illnesses (@cdc_lifeexp).  Given that the United States has the world's largest economy, this decline in life expectancy is particularly concerning, and indicates that national wealth may not be predictive of citizens' longevity (@worldbank_gdp). 
+
+As the world's economies trend toward globalism, there is increasing interest in understanding how these nations compare on key quality of life (QoL) factors, including but not limted to life expectancy.  Several organizations report on QoL measures as they evolve, including among others the World Economic Forum (WEF), World Health Organization (WHO), and the United Nations Development Programme.  The QoL measures reported by these bodies can be either unidimensional values or compound scores calculated from several factors of interest.
+
+The objective of this analysis is to explore key QoL indicators by country, with particular focus on how the United States ranks, through a series of visualizations and *k*-means clustering analyses.
+
+## **Methods**
+
+This analysis included country-level QoL indicators as described in Table 1.
+
+**Table 1.  Country-Level QoL measures.**
+
+| **Measure** 	| **Single or Compound** 	| **Description** 	| **Source** 	|
+|-------------------------------	|------------------------	|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|-------------------	|
+| Gross Domestic Product (GDP) 	| Single 	| Valued in $US 2018 	| @worldbank_gdp 	|
+| Infant mortality rate 	| Single 	| Number of infant deaths per 1,000 live births 	| @who_infantmort 	|
+| Life expectancy at birth 	| Single 	| Expected life at birth, both genders 	| @who_life 	|
+| Life expectancy at sixty 	| Single 	| Expected remaining life years at age 60, both genders 	| @who_life 	|
+| Human Development Index (HDI) 	| Compound 	| Developmental level, scale of 0:1 	| @un_dvlpt_HDIdesc 	|
+| Human Development Index (HDI) 	| Compound 	| Developmental category, four levels (low, medium, high, very high) 	| @un_dvlpt_HDIdesc 	|
+| Social Progress Index 	| Compound 	| Social progress level, scaled from 0:100 and comprising three broad categories:  basic human needs (e.g., nutrition, safety), foundations of wellbeing (e.g., basic knowledge, environmental quality), and opportunity (e.g., personal rights, freedoms) 	| @socialprog_desc 	|
+| Global Gender Gap Index 	| Compound 	| Gender equality index, scaled from 0:1, based on measurements of gender-related gaps in such dimensions as economic participation, level of education, health and survival, and political offices held 	| @wef_gender_desc 	|
+| World Happiness Score 	| Compound 	| Happiness score, scaled from 0:10, based on several factors including per-capita GDP, healthy life expectancy, social support, freedoms, and perception of corruption 	| @whr 	|
+
+Data for these measures was obtained for calendar year 2016 in `.csv` or `.xls(x)` formats.  Additionally, dataframe containing country identifiers (full names and three-letter codes) was generated from the `countrycode` library to facilitate merging the datafiles into one dataframe.
+
+### * Wrangling and Exploration*
+
+Each country-level datafile was imported, wrangled as needed, then tested against the dataframe containing country identifiers via `anti_join()` to identify mismatches.  Mismatching country names were manually recoded for each datafile, then all datafiles were merged using serial `lef_join()` statements.  Countries with wholly missing data were excluded.  The resulting dataframe, titled `alldata`, is presented in Table 2.
+
+** Table 2.  `alldata` dataframe contents.**
+
+| **Source**       	              | **Variable Name**    	| **Description**                                  	|
+|-------------------------------- |----------------------	|--------------------------------------------------	|
+| @socialprog      	              | SPI                  	| Social Progress Index value (scale of 0:100)     	|
+| @worldbank_gdp   	              | GDP_USD_2018         	| 2016 Gross Domestic Product (valued in $US 2018) 	|
+| @un_dvlpt        	              | HDIrank              	| Human Development Index ranking                  	|
+| @un_dvlpt        	              | HDIindex             	| HDI index value (scale of 0:1)                   	|
+| @un_dvlpt        	              | HDI_cat              	| HDI index category (5 levels)                    	|
+| @whr             	              | happiness            	| World Happiness Score (scale of 0:10)            	|
+| @wef_gender      	              | genderequality_index 	| Gender Equality Index (scale of 0:1)             	|
+| @who_infantmort  	              | infantmort           	| Infant mortality rate                            	|
+| @who_life        	              | birth_MF             	| Life expectancy at birth, males & females        	|
+| @who_life        	              | sixty_MF             	| Life expectancy at 60 years, males & females     	|
+
+At least one univariate visualization was generated for each variable in `alldata` via `ggplot()`, and a correlation matrix was produced to investigate pairwise relationshps between continuous variables.  Next, a series of ordered country-as-factor bivariate visualizations were created to explore the top and bottom 20 countries by ranking within each variable.
+
+### *k-Means Clustering*
+
+A series of *k*-means cluster analyses was carried out to cluster 
 
 
 ### *Loading libraries*
@@ -676,21 +766,6 @@ len <- dim(alldata)[[1]]
 rm(list = c("joindata_1", "joindata_2", "joindata_3", "joindata_4",
             "joindata_5", "joindata_6", "joindata_7", "joinsub"))
 ```
-
-The final dataframe, titled `alldata`, contains the following:
-
-| **Source**       	              | **Variable Name**    	| **Description**                                  	|
-|-------------------------------- |----------------------	|--------------------------------------------------	|
-| @socialprog      	              | SPI                  	| Social Progress Index value (scale of 0:100)     	|
-| @worldbank_gdp   	              | GDP_USD_2018         	| 2016 Gross Domestic Product (valued in $US 2018) 	|
-| @un_dvlpt        	              | HDIrank              	| Human Development Index ranking                  	|
-| @un_dvlpt        	              | HDIindex             	| HDI index value (scale of 0:1)                   	|
-| @un_dvlpt        	              | HDI_cat              	| HDI index category (5 levels)                    	|
-| @whr             	              | happiness            	| World Happiness Score (scale of 0:10)            	|
-| @wef_gender      	              | genderequality_index 	| Gender Equality Index (scale of 0:1)             	|
-| @who_infantmort  	              | infantmort           	| Infant mortality rate                            	|
-| @who_life        	              | birth_MF             	| Life expectancy at birth, males & females        	|
-| @who_life        	              | sixty_MF             	| Life expectancy at 60 years, males & females     	|
 
 
 ### *Visualizations*
