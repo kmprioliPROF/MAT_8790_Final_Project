@@ -15,6 +15,7 @@ ggthemr("fresh")       # Establishes blank plot canvas with dashed gridlines
 
 clusterdata <- read_csv("www/clusterdata.csv")             # Establishing dataset
 wes <- wes_palette("FantasticFox1", 5, type = "discrete")  # Establishing color scheme of plot
+set.seed(19811221)                                         # Ensuring stable performance
 
 
 #### UI side code ----
@@ -25,7 +26,7 @@ ui <- pageWithSidebar(
     selectInput(inputId = "xcol",
                 label = "x Variable",
                 choices = names(clusterdata),
-                selected = names(clusterdata)[[11]]),
+                selected = names(clusterdata)[[10]]),
     selectInput(inputId = "ycol",
                 label = "y Variable",
                 choices = names(clusterdata),
@@ -45,12 +46,12 @@ ui <- pageWithSidebar(
 #### Server side code ----
 
 server <- function(input, output, session) {
-  
   selectedData <- reactive({
     clusterdata[, c(input$xcol, input$ycol)]
   })
   
   clusters <- reactive({
+    set.seed(19811221)
     kmeans(selectedData(), input$clusters)
   })
   
