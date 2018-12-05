@@ -129,6 +129,7 @@ abstract: "Example abstract text"
   * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
   * Need to better organize flow of report (some results are in Methods, etc)
   * Need to more fully narrate steps and interpretations of output
+  * Ensure uniform ordering of table contents, output, references
   
   * Limitations:
   
@@ -1195,7 +1196,7 @@ Once again, the United States is not among the top 20 countries for life expecta
 clusterdata <- alldata %>%
   na.omit()
 
-# write_csv(clusterdata, "data/clusterdata.csv")  # Uncomment to export clustering dataset
+# write_csv(clusterdata, paste0("data/clusterdata_", lubridate::today(),".csv"))  # Uncomment to export clustering dataset
 ```
 
 ```{r kmeans_fxn, include = TRUE, echo = TRUE}
@@ -1229,7 +1230,7 @@ km_SPI_GDP_plot <- ggplot(data = clusterdata1,
   guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
   xlab("log(GDP) ($US 2018)") +
   ylab("Social Progress Index") +
-  ggtitle("Cluster Analysis, Social Progress Index vs. Log-Scale GDP")
+  ggtitle("Cluster Analysis, Social Progress Index vs. GDP")
 km_SPI_GDP_plot
 ```
 
