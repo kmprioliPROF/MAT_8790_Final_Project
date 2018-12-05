@@ -106,24 +106,34 @@ references:
   issued:
     year: 2018
   title: World Happiness Report
+- URL: https://www-bcf.usc.edu/~gareth/ISL/
+  author: 
+  - family: James
+    given: Gareth
+  - family: Witten
+    given: Daniela
+  - family: Hastie
+    given: Trevor
+  - family: Tibshirani
+    given: Robert
+  id: intro_stat_learn
+  issued:
+    year: 2013
+  title: An Introduction to Statistical Learning
+  publisher: Springer
+abstract: "Example abstract text"
 ---
 
 <!-- Notes
-  * Limited dataset to 2016
-  * Need to explain the following:
-      * Basics of k-means clustering
-  * Do a sensitivity analysis on cluster number
+  * Do a sensitivity analysis on cluster number (shiny?)
   * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
   * Need to better organize flow of report (some results are in Methods, etc)
   * Need to more fully narrate steps and interpretations of output
-  * Add to Discussion the recent report about another decrease in US life expectancy
   
   * Limitations:
   
 
   -->
-
-## **Abstract**
 
 
 ## **Background**
@@ -134,31 +144,52 @@ As the world's economies trend toward globalism, there is increasing interest in
 
 The objective of this analysis is to explore key QoL indicators by country, with particular focus on how the United States ranks, through a series of visualizations and *k*-means clustering analyses.
 
+
 ## **Methods**
 
 This analysis included country-level QoL indicators as described in Table 1.
 
 **Table 1.  Country-Level QoL measures.**
 
-| **Measure** 	| **Single or Compound** 	| **Description** 	| **Source** 	|
-|-------------------------------	|------------------------	|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|-------------------	|
-| Gross Domestic Product (GDP) 	| Single 	| Valued in $US 2018 	| @worldbank_gdp 	|
-| Infant mortality rate 	| Single 	| Number of infant deaths per 1,000 live births 	| @who_infantmort 	|
-| Life expectancy at birth 	| Single 	| Expected life at birth, both genders 	| @who_life 	|
-| Life expectancy at sixty 	| Single 	| Expected remaining life years at age 60, both genders 	| @who_life 	|
-| Human Development Index (HDI) 	| Compound 	| Developmental level, scale of 0:1 	| @un_dvlpt_HDIdesc 	|
-| Human Development Index (HDI) 	| Compound 	| Developmental category, four levels (low, medium, high, very high) 	| @un_dvlpt_HDIdesc 	|
-| Social Progress Index 	| Compound 	| Social progress level, scaled from 0:100 and comprising three broad categories:  basic human needs (e.g., nutrition, safety), foundations of wellbeing (e.g., basic knowledge, environmental quality), and opportunity (e.g., personal rights, freedoms) 	| @socialprog_desc 	|
-| Global Gender Gap Index 	| Compound 	| Gender equality index, scaled from 0:1, based on measurements of gender-related gaps in such dimensions as economic participation, level of education, health and survival, and political offices held 	| @wef_gender_desc 	|
-| World Happiness Score 	| Compound 	| Happiness score, scaled from 0:10, based on several factors including per-capita GDP, healthy life expectancy, social support, freedoms, and perception of corruption 	| @whr 	|
+```{r table_1, echo = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(kableExtra)
+
+meas <- c("Gross Domestic Product (GDP)", "Infant mortality rate", "Life expectancy at birth", 
+          "Life expectancy at sixty", "Human Development Index (HDI)", "Human Development Index (HDI)", 
+          "Social Progress Index", "Global Gender Gap Index", "World Happiness Score")
+sing_comp <- c(rep("Single", 4), rep("Compound", 5))
+measdesc <- c("Valued in $US 2018", 
+              "Number of infant deaths per 1,000 live births", 
+              "Expected life at birth, both genders", 
+              "Expected remaining life years at age 60, both genders", 
+              "Developmental level, scale of 0:1", 
+              "Developmental category, four levels (low, medium, high, very high)", 
+              "Social progress level, scaled from 0:100 and comprising three broad categories:  basic human needs (e.g., nutrition, safety), foundations of wellbeing (e.g., basic knowledge, environmental quality), and opportunity (e.g., personal rights, freedoms)", 
+              "Gender equality index, scaled from 0:1, based on measurements of gender-related gaps in such dimensions as economic participation, level of education, health and survival, and political offices held", 
+              "Happiness score, scaled from 0:10, based on several factors including per-capita GDP, healthy life expectancy, social support, freedoms, and perception of corruption")
+measref <- c("@worldbank_gdp", "@who_infantmort", "@who_life", "@who_life", "@un_dvlpt_HDIdesc", 
+              "@un_dvlpt_HDIdesc", "@socialprog_desc", "@wef_gender_desc", "@whr")
+
+table_1 <- as.tibble(cbind(meas, sing_comp, measdesc, measref))
+colnames(table_1) <- c("Measure", "Single or Compound", "Description", "Source")
+table_1_kbl <- table_1 %>% 
+  kable(format = "latex") %>% 
+  column_spec(1, width = "10em", border_left = FALSE, border_right = FALSE) %>% 
+  column_spec(2, width = "6em", border_left = FALSE, border_right = FALSE) %>% 
+  column_spec(3, width = "25em", border_left = FALSE, border_right = FALSE) %>% 
+  column_spec(4, width = "8em", border_left = FALSE, border_right = FALSE)
+table_1_kbl
+```
+
 
 Data for these measures was obtained for calendar year 2016 in `.csv` or `.xls(x)` formats.  Additionally, dataframe containing country identifiers (full names and three-letter codes) was generated from the `countrycode` library to facilitate merging the datafiles into one dataframe.
 
-### * Wrangling and Exploration*
+### *Wrangling and Exploration*
 
 Each country-level datafile was imported, wrangled as needed, then tested against the dataframe containing country identifiers via `anti_join()` to identify mismatches.  Mismatching country names were manually recoded for each datafile, then all datafiles were merged using serial `lef_join()` statements.  Countries with wholly missing data were excluded.  The resulting dataframe, titled `alldata`, is presented in Table 2.
 
-** Table 2.  `alldata` dataframe contents.**
+**Table 2.  `alldata` dataframe contents.**
 
 | **Source**       	              | **Variable Name**    	| **Description**                                  	|
 |-------------------------------- |----------------------	|--------------------------------------------------	|
@@ -177,7 +208,11 @@ At least one univariate visualization was generated for each variable in `alldat
 
 ### *k-Means Clustering*
 
-A series of *k*-means cluster analyses was carried out to cluster 
+To assess how the United States compares to the rest of the world, a series of *k*-means cluster analyses was carried out.  *K*-means clustering is described elsewhere; briefly, given bivariate data and a desired number *k* groups, this classification algorithm classifies the points in the two-dimensional plane to minimize the total within-cluster variation for all clusters (@intro_stat_learn).  This is an iterative process that works by establishing *k* centroids, classifying each point by which centroid is closest, then moving the centroids to the center of their corrresponding clusters, and repeating the process.  Iteration terminates when the centroids no longer move, and the classification established in this terminal iteraton is the clustering.
+
+The Human Development Index categorizes the world's countries into four developmental levels (low, medium, high, and very high); thus *k*-means clustering analysis was performed assuming 4 clusters.  Missing values were excluded to ensure the clustering algorithm would run, and a function was written to subset the clustering dataset (named `clusterdata`) to the variables of interest for each *k*-means analysis.  On each output plot, the United States was identified by an enlarged `geom_point()`.
+
+## **Results**
 
 
 ### *Loading libraries*
@@ -1158,8 +1193,6 @@ Once again, the United States is not among the top 20 countries for life expecta
 
 ### **Clustering Analysis**
 
-The Human Development Index categorizes the world's countries into four developmental levels (low, medium, high, and very high); thus *k*-means clustering analysis was performed assuming 4 clusters.  Additionally, missing values were excluded to ensure the clustering algorithm would run, and a function was written to subset the clustering dataset (named `clusterdata`) to the variables of interest for each *k*-means analysis.  On each output plot, countries in the "Very High" HDI category are denoted with an empty `geom_point()`, and the United States was identified by an enlarged point.
-
 ```{r NAomit, include = FALSE, echo = FALSE, eval = TRUE}
 clusterdata <- alldata %>%
   na.omit()
@@ -1333,9 +1366,6 @@ grid.arrange(km_SPI_birth_MF_plot, km_SPI_sixty_MF_plot, nrow = 2,
                             gp = gpar(fontsize = 16, fontface = "bold", col = "#545454")))
 ```
 
-
-
-## **Results**
 
 
 ## **Discussion**
