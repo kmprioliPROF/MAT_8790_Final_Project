@@ -1,6 +1,6 @@
 # Katherine M. Prioli
 # MAT 8790 Final Project - k-means cluster sensitivity analysis
-# Wed Dec 05 16:46:28 2018 ------------------------------
+# Wed Dec 05 19:20:34 2018 ------------------------------
 
 
 #### Loading libraries and data ----
@@ -14,7 +14,7 @@ library(ggthemr)       # For prettifying plot framework
 ggthemr("fresh")       # Establishes blank plot canvas with dashed gridlines
 
 clusterdata <- read_csv("www/clusterdata.csv")             # Establishing dataset
-wes <- wes_palette("FantasticFox1", 5, type = "discrete")  # Establishing color scheme of plot
+wes <- wes_palette("Darjeeling1", 5, type = "discrete")    # Establishing color scheme of plot (alternative FantasticFox1)
 set.seed(19811221)                                         # Ensuring stable performance
 
 
