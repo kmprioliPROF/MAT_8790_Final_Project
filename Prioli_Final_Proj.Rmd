@@ -125,7 +125,7 @@ abstract: "Example abstract text"
 ---
 
 <!-- Notes
-  * Change example wrangle dataset to a simpler one (HDI takes up too much room in output)
+  * Fix references in Table 1
   * Need to better organize flow of report (some results are in Methods, etc)
   * Need to more fully narrate steps and interpretations of output
   * Ensure uniform ordering of table contents, output, references
@@ -183,8 +183,8 @@ table_1_kbl <- table_1 %>%
 table_1_kbl
 ```
 
-
 Data for these measures was obtained for calendar year 2016 in `.csv` or `.xls(x)` formats.  Additionally, dataframe containing country identifiers (full names and three-letter codes) was generated from the `countrycode` library to facilitate merging the datafiles into one dataframe.
+
 
 ### *Wrangling and Exploration*
 
@@ -200,12 +200,13 @@ Each country-level datafile was imported, wrangled as needed, then tested agains
 | @un_dvlpt        	              | HDIindex             	| HDI index value (scale of 0:1)                   	|
 | @un_dvlpt        	              | HDI_cat              	| HDI index category (5 levels)                    	|
 | @whr             	              | happiness            	| World Happiness Score (scale of 0:10)            	|
-| @wef_gender      	              | genderequality_index 	| Gender Equality Index (scale of 0:1)             	|
+| @wef_gender      	              | gendereq 	            | Gender Equality Index (scale of 0:1)             	|
 | @who_infantmort  	              | infantmort           	| Infant mortality rate                            	|
 | @who_life        	              | birth_MF             	| Life expectancy at birth, males & females        	|
 | @who_life        	              | sixty_MF             	| Life expectancy at 60 years, males & females     	|
 
 At least one univariate visualization was generated for each variable in `alldata` via `ggplot()`, and a correlation matrix was produced to investigate pairwise relationshps between continuous variables.  Next, a series of ordered country-as-factor bivariate visualizations were created to explore the top and bottom 20 countries by ranking within each variable.
+
 
 ### *K-Means Clustering*
 
@@ -213,7 +214,12 @@ To assess how the United States compares to the rest of the world, a series of *
 
 The Human Development Index categorizes the world's countries into four developmental levels (low, medium, high, and very high); thus *k*-means clustering analysis was performed assuming 4 clusters.  Missing values were excluded to ensure the clustering algorithm would run, and a function was written to subset the clustering dataset (named `clusterdata`) to the variables of interest for each *k*-means analysis.  On each output plot, the United States was identified by an enlarged `geom_point()`.
 
-For brevity, example code for wrangling, plotting, and clustering is presented in the Results section; full code is available in the GitHub repository for this report (@kmpgit).  The libraries required for this analysis were loaded as shown below.
+
+### *Example Code*
+
+For brevity, example code for wrangling, plotting, and clustering is presented here; full code is available in the GitHub repository for this report (@kmpgit).
+
+The libraries required for this analysis were loaded as shown below.
 
 ```{r setup, include = TRUE, warning = FALSE, results = 'hide', echo = TRUE, message = FALSE}
 library(tidyverse)
@@ -231,10 +237,7 @@ ggthemr("fresh")         # For prettifying plot framework
 wes <- wes_palette("Darjeeling1", 5, type = "discrete")    # Establishing color scheme for cluster plots
 ```
 
-
-### *Example code*
-
-Establishing a crosswalk for country names and 3-letter codes:
+Code for establishing a crosswalk for country names and 3-letter codes:
 
 ```{r countries, include = TRUE, echo = TRUE, eval = TRUE}
 countries_full <- codelist_panel %>% 
@@ -264,9 +267,59 @@ countries <- countries_full %>%
   select(country, country3)
 ```
 
-Importing and wrangling each data file, and standardizing country names:
+Code for importing and wrangling each data file, and standardizing country names (example shown for the Social Progress Index data):
 
-```{r HDI_import, include = TRUE, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+<!-- Social Progress Index (SPI) data: -->
+
+```{r SPI_wrangle, include = TRUE, echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE}
+
+# Importing, subsetting, renaming
+
+SPI_2016_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 4)
+
+SPIdata <- SPI_2016_raw %>% 
+  select(2:3) %>% 
+  rename(`SPI` = `Social Progress Index`,
+         country3 = Code)
+
+# Standardizing country names by using `anti_join()` to see which 
+# countries in `SPIdata` don't have a match in the `countries` dataframe
+
+SPIanti <- SPIdata %>%
+  anti_join(countries, by = "country3") %>%
+  select(country3) %>%
+  arrange(country3) %>% 
+  unique()
+dim(SPIanti)
+
+# Correcting for mismatches with `countries` using `mutate()`
+
+SPIdata <- SPIdata %>%
+  mutate(country3 = case_when(
+    country3 == "CHI" ~ as.character(NA), # Nonstandard code for Chile; omitting (no data in these rows)
+    country3 == "KSV" ~ "XKS",            # Nonstandard code for Kosovo
+    country3 == "NCY" ~ as.character(NA), # Turk. Repub. of N. Cyprus; omitting (conflict w/Cyprus)
+    country3 == "SML" ~ as.character(NA), # Unable to determine
+    country3 == "WBG" ~ as.character(NA), # West Bank / Gaza Strip; omitting (conflict w/Palestine)
+    TRUE ~ as.character(country3)
+  )) %>% 
+  filter(!is.na(country3))
+
+SPIanti <- SPIdata %>%
+  anti_join(countries, by = "country3") %>%
+  select(country3) %>%
+  arrange(country3) %>% 
+  unique()
+dim(SPIanti)
+
+# Removing unneeded files
+
+rm(list = c("SPI_2016_raw", "SPIanti"))
+```
+
+<!-- Human Development Index (HDI) data: -->
+
+```{r HDI_import, include = FALSE, echo = FALSE, eval = TRUE}
 
 # Importing raw data
 
@@ -338,19 +391,14 @@ HDIdata <- bind_rows(HDI_vhhd, HDI_hhd, HDI_mhd, HDI_lhd, HDI_oth) %>%
 HDIdata <- HDIdata[c(2, 1, 3:4)]
 ```
 
-Standardizing country names by using `anti_join()` to see which countries in `HDIdata` don't have a match in the `countries` dataframe, and correcting those for which an inexact match exists:
+<!-- Testing against `countries` and correcting for conflicts: -->
 
-```{r HDI_countrytest, include = TRUE, echo = TRUE, eval = TRUE}
+```{r HDI_countryfix, include = FALSE, echo = FALSE, eval = TRUE}
 HDIanti <- HDIdata %>%
   anti_join(countries, by = "country") %>%
   select(country) %>%
   arrange(country)
 dim(HDIanti)
-```
-
-Correcting for mismatches with `countries` using `mutate()`:
-
-```{r HDI_countryfix, include = TRUE, echo = TRUE, eval = TRUE}
 
 HDIdata <- HDIdata %>%
   mutate(country = case_when(
@@ -391,55 +439,9 @@ HDIanti <- HDIdata %>%
   select(country) %>%
   arrange(country)
 dim(HDIanti)
-```
 
-```{r HDI_cleanup, include = FALSE, echo = FALSE, eval = TRUE}
 rm(list = c("hhd_end", "hhd_st", "lhd_end", "lhd_st", "mhd_end", "mhd_st", "oth_end", "oth_st", "vhhd_end",
             "vhhd_st", "HDIraw", "HDIcolnm", "HDI_vhhd", "HDI_hhd", "HDI_mhd", "HDI_lhd", "HDI_oth", "HDIanti"))
-```
-
-<!-- Social Progress Index (SPI) data: -->
-
-```{r SPI_import, include = FALSE, echo = FALSE, eval = TRUE}
-SPI_2016_raw <- read_xlsx("data/SPIdata.xlsx", sheet = 4)
-
-SPIdata <- SPI_2016_raw %>% 
-  select(2:3) %>% 
-  rename(`SPI` = `Social Progress Index`,
-         country3 = Code)
-```
-
-<!-- Testing against `countries` and renaming to correct for conflicts: -->
-
-```{r SPI_countrytest, include = FALSE, echo = FALSE, eval = TRUE}
-SPIanti <- SPIdata %>%
-  anti_join(countries, by = "country3") %>%
-  select(country3) %>%
-  arrange(country3) %>% 
-  unique()
-dim(SPIanti)
-
-SPIdata <- SPIdata %>%
-  mutate(country3 = case_when(
-    country3 == "CHI" ~ as.character(NA), # Nonstandard code for Chile; omitting (no data in these rows)
-    country3 == "KSV" ~ "XKS",            # Nonstandard code for Kosovo
-    country3 == "NCY" ~ as.character(NA), # Turk. Repub. of N. Cyprus; omitting (conflict w/Cyprus)
-    country3 == "SML" ~ as.character(NA), # Unable to determine
-    country3 == "WBG" ~ as.character(NA), # West Bank / Gaza Strip; omitting (conflict w/Palestine)
-    TRUE ~ as.character(country3)
-  )) %>% 
-  filter(!is.na(country3))
-
-SPIanti <- SPIdata %>%
-  anti_join(countries, by = "country3") %>%
-  select(country3) %>%
-  arrange(country3) %>% 
-  unique()
-dim(SPIanti)
-
-# Removing unneeded files
-
-rm(list = c("SPI_2016_raw", "SPIanti"))
 ```
 
 <!-- World Happiness Score data: -->
@@ -497,10 +499,10 @@ rm(list = c("WHR_raw", "WHRanti"))
 gender_raw <- read_xlsx("data/WEF_gender.xlsx", sheet = 2, range = "$A$2:$K$147")
 gender_raw <- gender_raw %>% 
   select(1:2)
-colnames(gender_raw) <- c("country", "genderequality_index")
+colnames(gender_raw) <- c("country", "gendereq")
 genderdata <- gender_raw %>% 
   slice(2:dim(gender_raw)[1]) %>% 
-  mutate(genderequality_index = as.numeric(genderequality_index))
+  mutate(gendereq = as.numeric(gendereq))
 ```
 
 <!-- Testing against `countries` and correcting for conflicts: -->
@@ -739,7 +741,7 @@ dim(GDPanti)
 rm(list = c("GDPraw", "GDPsub", "GDPcolnames", "GDPanti"))
 ```
 
-Combining individual data files into one dataframe and filtering out countries with no data:
+Code to combine individual data files into one dataframe and filter out countries with no data:
 
 ```{r combine, include = TRUE, echo = TRUE, eval = TRUE}
 joindata_1 <- full_join(countries, HDIdata, by = "country")
@@ -758,7 +760,7 @@ joinsub <- joindata_7 %>%
       is.na(HDI_cat) == TRUE &
       is.na(SPI) == TRUE &
       is.na(happiness) == TRUE &
-      is.na(genderequality_index) == TRUE &
+      is.na(gendereq) == TRUE &
       is.na(infantmort) == TRUE &
       is.na(birth_MF) == TRUE &
       is.na(sixty_MF) == TRUE &
@@ -830,6 +832,41 @@ SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI,
   ggtitle("Social Progress Index by Country, \nTop and Bottom 20 Countries")
 ```
 
+Example clustering code:
+
+```{r kmeans_example, echo = TRUE, eval = FALSE}
+kmdf <- function(data, x, y, z){
+  kmdata <- data %>% 
+    select(x, y, z)
+  kmdata <- return(kmdata)
+}
+
+kmdata <- kmdf(clusterdata, "country", "SPI", "logGDP")
+
+set.seed(19811221)
+km_SPI_GDP <- kmeans(kmdata[, 2:3], 4)
+km_SPI_GDP_cluster <- as.factor(km_SPI_GDP$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_SPI_GDP_cluster)
+
+km_SPI_GDP_plot <- ggplot(data = clusterdata1, 
+                          aes(x = logGDP, y = SPI, 
+                              color = km_SPI_GDP_cluster,
+                              size = US,
+                              shape = HDI_cat)) +
+  geom_point() +
+  ylim(0, 100) +
+  scale_color_manual(values = wes) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
+  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  xlab("log(GDP) ($US 2018)") +
+  ylab("Social Progress Index") +
+  ggtitle("Cluster Analysis, Social Progress Index vs. GDP")
+km_SPI_GDP_plot
+```
+
+
 ## **Results**
 
 ### *Data Exploration and Visualizations*
@@ -894,8 +931,8 @@ happiness_hist
 Exploring the gender equality index data:
 
 ```{r genderplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
-gender_hist <- ggplot(data = alldata, aes(x = genderequality_index)) +
-  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$genderequality_index))))) +
+gender_hist <- ggplot(data = alldata, aes(x = gendereq)) +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$gendereq))))) +
   xlab("Gender Equality Index") +
   ylab("Count") +
   ggtitle("Gender Equality Index Distribution")
@@ -906,7 +943,7 @@ Exploring the WHO infant mortality rate data:
 
 ```{r infantmortplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
 infantmort_hist <- ggplot(data = alldata, aes(x = infantmort)) + 
-  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$genderequality_index))))) +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$gendereq))))) +
   xlab("Probability of Infant Mortality") +
   ylab("Count") +
   ggtitle("Infant Mortality Distribution")
@@ -1061,19 +1098,19 @@ Exploring gender equality:
 
 ```{r gender_country, echo = FALSE, fig.height = 6, fig.width = 6}
 alldata_gender <- alldata %>%
-  filter(!is.na(genderequality_index) == TRUE) %>% 
-  arrange(desc(genderequality_index)) %>% 
-  select(genderequality_index, country, US, color)
+  filter(!is.na(gendereq) == TRUE) %>% 
+  arrange(desc(gendereq)) %>% 
+  select(gendereq, country, US, color)
 
 alldata_gender_top20 <- alldata_gender %>% head(20)
 alldata_gender_bot20 <- alldata_gender %>% tail(20)
 alldata_gender_40 <- bind_rows(alldata_gender_top20, alldata_gender_bot20)
 
-colors <- alldata_gender_40$color[order(alldata_gender_40$genderequality_index)]
+colors <- alldata_gender_40$color[order(alldata_gender_40$gendereq)]
 
 gender_country_point <- ggplot(data = alldata_gender_40, 
-                            aes(x = genderequality_index, 
-                                y = fct_reorder(country, genderequality_index), 
+                            aes(x = gendereq, 
+                                y = fct_reorder(country, gendereq), 
                                 color = US)) +
   geom_point() +
   scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
@@ -1201,7 +1238,7 @@ clusterdata <- alldata %>%
 # write_csv(clusterdata, paste0("data/clusterdata_", lubridate::today(),".csv"))  # Uncomment to export clustering dataset
 ```
 
-```{r kmeans_fxn, include = TRUE, echo = TRUE}
+```{r kmeans_fxn, echo = FALSE, eval = TRUE}
 kmdf <- function(data, x, y, z){
   kmdata <- data %>% 
     select(x, y, z)
@@ -1209,7 +1246,7 @@ kmdf <- function(data, x, y, z){
 }
 ```
 
-Clustering happiness versus log GDP:
+Clustering social progress versus log GDP:
 
 ```{r kmeans_SPI_GDP, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
 kmdata <- kmdf(clusterdata, "country", "SPI", "logGDP")
@@ -1237,7 +1274,7 @@ km_SPI_GDP_plot <- ggplot(data = clusterdata1,
 km_SPI_GDP_plot
 ```
 
-Clustering social progress versus happiness (code for this and subsequent clustering not shown for brevity):
+Clustering social progress versus happiness:
 
 ```{r kmeans_SPI_happiness, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
 kmdata <- kmdf(clusterdata, "country", "SPI", "happiness")
@@ -1267,7 +1304,7 @@ km_SPI_happiness_plot
 Clustering social progress versus gender equality:
 
 ```{r kmeans_SPI_gender, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
-kmdata <- kmdf(clusterdata, "country", "SPI", "genderequality_index")
+kmdata <- kmdf(clusterdata, "country", "SPI", "gendereq")
 
 set.seed(19811221)
 km_SPI_gender <- kmeans(kmdata[, 2:3], 4)
@@ -1276,7 +1313,7 @@ km_SPI_gender_cluster <- as.factor(km_SPI_gender$cluster)
 clusterdata1 <- cbind(clusterdata, km_SPI_gender_cluster)
 
 km_SPI_gender_plot <- ggplot(data = clusterdata1, 
-                                aes(x = genderequality_index, y = SPI, 
+                                aes(x = gendereq, y = SPI, 
                                     color = km_SPI_gender_cluster,
                                     size = US,
                                     shape = HDI_cat)) +
