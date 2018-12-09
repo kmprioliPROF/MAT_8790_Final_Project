@@ -12,6 +12,7 @@ library(wesanderson)   # For Wes Anderson palette
 library(ggthemr)       # For prettifying plot framework
 
 ggthemr("fresh")       # Establishes blank plot canvas with dashed gridlines
+wes <- wes_palette("Darjeeling1", 5, type = "discrete")    # Establishing color scheme of plot
 
 clusterdata <- read_csv("www/clusterdata_2018-12-09.csv")  # Establishing dataset
 clusterdata <- clusterdata %>% 
@@ -22,7 +23,7 @@ clusterdata <- clusterdata %>%
     US == "US" ~ 6,
     TRUE       ~ 3
   ))
-wes <- wes_palette("Darjeeling1", 5, type = "discrete")    # Establishing color scheme of plot
+
 set.seed(19811221)                                         # Ensuring stable performance
 
 

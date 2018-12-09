@@ -225,8 +225,10 @@ library(gridExtra)       # For grid.arrange()
 library(grid)            # For textGrob() to annotate grid.arrange() elements
 library(kableExtra)      # For nicer output tables
 library(GGally)          # For ggpairs() correlation matrix
+library(wesanderson)     # For Wes Anderson palette
 
-ggthemr("fresh")
+ggthemr("fresh")         # For prettifying plot framework
+wes <- wes_palette("Darjeeling1", 5, type = "discrete")    # Establishing color scheme for cluster plots
 ```
 
 
@@ -1225,6 +1227,7 @@ km_SPI_GDP_plot <- ggplot(data = clusterdata1,
                               shape = HDI_cat)) +
   geom_point() +
   ylim(0, 100) +
+  scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
   scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
   guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
@@ -1252,6 +1255,7 @@ km_SPI_happiness_plot <- ggplot(data = clusterdata1,
                                     shape = HDI_cat)) +
   geom_point() +
   ylim(0, 100) +
+  scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
   guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
   xlab("World Happiness Score") +
@@ -1278,6 +1282,7 @@ km_SPI_gender_plot <- ggplot(data = clusterdata1,
                                     shape = HDI_cat)) +
   geom_point() +
   ylim(0, 100) +
+  scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
   guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
   xlab("Gender Equality Index") +
@@ -1304,6 +1309,7 @@ km_SPI_infantmort_plot <- ggplot(data = clusterdata1,
                                     shape = HDI_cat)) +
   geom_point() +
   ylim(0, 100) +
+  scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
   guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
   xlab("Infant Mortality Rate") +
@@ -1314,7 +1320,7 @@ km_SPI_infantmort_plot
 
 Clustering social progress versus life expectancy:
 
-```{r kmeans_SPI_lifeexp, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 6}
+```{r kmeans_SPI_lifeexp, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 8}
 kmdata <- kmdf(clusterdata, "country", "SPI", "birth_MF")
 
 set.seed(19811221)
@@ -1331,6 +1337,7 @@ km_SPI_birth_MF_plot <- ggplot(data = clusterdata1,
   geom_point() +
   xlim(50, 90) +
   ylim(0, 100) +
+  scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
   guides(color = FALSE, size = FALSE, shape = FALSE) +
   xlab("Total Life Expectancy at Birth (years)") +
@@ -1353,6 +1360,7 @@ km_SPI_sixty_MF_plot <- ggplot(data = clusterdata1,
   geom_point() +
   xlim(50, 90) +
   ylim(0, 100) +
+  scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
   guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE, nrow = 1)) +
   theme(legend.position = "bottom") +
