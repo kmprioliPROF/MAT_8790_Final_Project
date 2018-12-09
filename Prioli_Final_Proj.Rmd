@@ -31,13 +31,6 @@ references:
     month: 12
     year: 2018
   title: MAT_8790_Final_Project
-- URL: http://apps.who.int/gho/data/view.main.SDG2016LEXv?lang=en
-  author:
-  - family: World Health Organization
-  id: who_life
-  issued:
-    year: 2018
-  title: Life Expectancy
 - URL: http://apps.who.int/gho/data/view.main.182?lang=en
   author:
   - family: World Health Organization
@@ -45,6 +38,13 @@ references:
   issued:
     year: 2018
   title: Probability of Dying per 1000 Live Births
+- URL: http://apps.who.int/gho/data/view.main.SDG2016LEXv?lang=en
+  author:
+  - family: World Health Organization
+  id: who_life
+  issued:
+    year: 2018
+  title: Life Expectancy
 - URL: http://reports.weforum.org/global-gender-gap-report-2016/rankings/
   author:
   - family: World Economic Forum
@@ -143,7 +143,7 @@ The Centers for Disease Control and Prevention (CDC) has recently issued a repor
 
 As the world's economies trend toward globalism, there is increasing interest in understanding how these nations compare on key quality of life (QoL) factors, including but not limted to life expectancy.  Several organizations report on QoL measures as they evolve, including among others the World Economic Forum (WEF), World Health Organization (WHO), and the United Nations Development Programme.  The QoL measures reported by these bodies can be either unidimensional values or compound scores calculated from several factors of interest.
 
-The objective of this analysis is to explore key QoL indicators by country, with particular focus on how the United States ranks, through a series of visualizations and *k*-means clustering analyses.
+The objective of this analysis is to explore the relationships between key QoL indicators by country, with particular focus on how the United States ranks, through a series of visualizations and *k*-means clustering analyses.
 
 
 ## **Methods**
@@ -796,14 +796,23 @@ rm(list = c("joindata_1", "joindata_2", "joindata_3", "joindata_4",
             "joindata_5", "joindata_6", "joindata_7", "joinsub"))
 ```
 
-Example univariate visualization code:
+Example code for univariate explorations:
 
-```{r SPIplot_code, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
+```{r SPIplot_code, include = TRUE, echo = TRUE, eval = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 SPI_hist <- ggplot(data = alldata, aes(x = SPI)) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$SPI))))) +
   xlab("Social Progress Index") +
   ylab("Count") +
   ggtitle("Social Progress Index Distribution")
+
+SPIsumm <- broom::tidy(round(summary(alldata$SPI), digits = 3))
+sd <- round(sd(alldata$SPI, na.rm = TRUE), digits = 3)
+SPIsumm <- cbind(SPIsumm, sd)
+colnames(SPIsumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+SPIsumm <- SPIsumm[c(1:6,8,7)]
+SPIsumm_grob <- tableGrob(t(SPIsumm), theme = ttheme_minimal())
+
+grid.arrange(SPI_hist, SPIsumm_grob, nrow = 1, widths = c(0.8, 0.2))
 ```
 
 Example ordered country-level plot code:
@@ -859,7 +868,9 @@ km_SPI_GDP_plot <- ggplot(data = clusterdata1,
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
   scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
-  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   xlab("log(GDP) ($US 2018)") +
   ylab("Social Progress Index") +
   ggtitle("Cluster Analysis, Social Progress Index vs. GDP")
@@ -873,28 +884,53 @@ km_SPI_GDP_plot
 
 First, exploring the Social Progress Index data:
 
-```{r SPIplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
-SPI_hist
+```{r SPIplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
+SPI_hist <- ggplot(data = alldata, aes(x = SPI)) +
+  geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$SPI))))) +
+  xlab("Social Progress Index") +
+  ylab("Count") +
+  ggtitle("Social Progress Index Distribution")
+
+SPIsumm <- broom::tidy(round(summary(alldata$SPI), digits = 3))
+sd <- round(sd(alldata$SPI, na.rm = TRUE), digits = 3)
+SPIsumm <- cbind(SPIsumm, sd)
+colnames(SPIsumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+SPIsumm <- SPIsumm[c(1:6,8,7)]
+SPIsumm_grob <- tableGrob(t(SPIsumm), theme = ttheme_minimal())
+
+grid.arrange(SPI_hist, SPIsumm_grob, nrow = 1, widths = c(0.8, 0.2))
 ```
 
 Next, exploring GDP by summary statistics:
 
-```{r GDPsumm, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
-GDPsumm <- broom::tidy(round(summary(alldata$GDP_USD_2018 / 1000000), digits = 4)) %>% 
-  kable(format = "markdown")
+```{r GDPsumm, echo = FALSE, warning = FALSE, message = FALSE}
+GDPsumm <- broom::tidy(round(summary(alldata$GDP_USD_2018), digits = 3))
+sd <- round(sd(alldata$GDP_USD_2018, na.rm = TRUE), digits = 3)
+GDPsumm <- cbind(GDPsumm, sd)
+colnames(GDPsumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+GDPsumm <- GDPsumm[c(1:6,8,7)]
+GDPsumm <- GDPsumm %>% kable(format = "markdown")
 GDPsumm
 ```
 
 Taking the log transform and plotting:
 
-```{r GDPplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
+```{r GDPplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 GDP_hist <- ggplot(data = alldata, aes(x = log(GDP_USD_2018))) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$GDP_USD_2018))))) +
   xlab("log(GDP) ($US 2018)") +
   ylab("Count") +
-  ggtitle("Gross Domestic Product Distribution, \nLog Transform") +
+  ggtitle("Gross Domestic Product Distribution, Log Transform") +
   scale_x_continuous(labels = scales::dollar_format(prefix = "$"))
-GDP_hist
+
+logGDPsumm <- broom::tidy(round(summary(log(alldata$GDP_USD_2018)), digits = 3))
+sd <- round(sd(log(alldata$GDP_USD_2018), na.rm = TRUE), digits = 3)
+logGDPsumm <- cbind(logGDPsumm, sd)
+colnames(logGDPsumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+logGDPsumm <- logGDPsumm[c(1:6,8,7)]
+logGDPsumm_grob <- tableGrob(t(logGDPsumm), theme = ttheme_minimal())
+
+grid.arrange(GDP_hist, logGDPsumm_grob, nrow = 1, widths = c(0.8, 0.2))
 ```
 
 Exploring the Human Development Index variables:
@@ -904,7 +940,7 @@ HDIindex_hist <- ggplot(data = alldata, aes(x = HDIindex)) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$HDIindex))))) +
   xlab("Human Development Index") +
   ylab("Count") +
-  ggtitle("Human Development Index Distribution")
+  ggtitle("HDI Distribution")
 
 HDIcat_bar <- ggplot(data = alldata, aes(x = HDI_cat)) +
   geom_bar() +
@@ -912,42 +948,76 @@ HDIcat_bar <- ggplot(data = alldata, aes(x = HDI_cat)) +
             hjust = 0.5, position = position_stack(vjust = 0.5)) +
   xlab("Human Development Category") +
   ylab("Count") +
-  ggtitle("Human Development Index Counts \nby Category")
+  ggtitle("Country Counts by HDI Category")
 
-grid.arrange(HDIindex_hist, HDIcat_bar, nrow = 1)
+HDIsumm <- broom::tidy(round(summary(alldata$HDIindex), digits = 3))
+sd <- round(sd(alldata$HDIindex, na.rm = TRUE), digits = 3)
+HDIsumm <- cbind(HDIsumm, sd)
+colnames(HDIsumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+HDIsumm <- HDIsumm[c(1:6,8,7)]
+HDIsumm_grob <- tableGrob(HDIsumm, theme = ttheme_minimal(), rows = NULL)
+
+grid.arrange(HDIindex_hist, HDIcat_bar, HDIsumm_grob, nrow = 2, heights = c(0.8, 0.2),
+             top = textGrob("Human Development Index", 
+                            gp = gpar(fontsize = 14, fontface = "bold", col = "#545454"),
+                            x = 0.025, hjust = 0))
 ```
 
 Exploring the World Happiness Report data:
 
-```{r happinessplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
+```{r happinessplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 happiness_hist <- ggplot(data = alldata, aes(happiness)) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$happiness))))) +
   xlab("Happiness Score") +
   ylab("Count") +
   ggtitle("Happiness Score Distribution")
-happiness_hist
+
+happinesssumm <- broom::tidy(round(summary(alldata$happiness), digits = 3))
+sd <- round(sd(alldata$happiness, na.rm = TRUE), digits = 3)
+happinesssumm <- cbind(happinesssumm, sd)
+colnames(happinesssumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+happinesssumm <- happinesssumm[c(1:6,8,7)]
+happinesssumm_grob <- tableGrob(t(happinesssumm), theme = ttheme_minimal())
+
+grid.arrange(happiness_hist, happinesssumm_grob, nrow = 1, widths = c(0.8, 0.2))
 ```
 
 Exploring the gender equality index data:
 
-```{r genderplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
+```{r genderplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 gender_hist <- ggplot(data = alldata, aes(x = gendereq)) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$gendereq))))) +
   xlab("Gender Equality Index") +
   ylab("Count") +
   ggtitle("Gender Equality Index Distribution")
-gender_hist
+
+gendersumm <- broom::tidy(round(summary(alldata$gendereq), digits = 3))
+sd <- round(sd(alldata$gendereq, na.rm = TRUE), digits = 3)
+gendersumm <- cbind(gendersumm, sd)
+colnames(gendersumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+gendersumm <- gendersumm[c(1:6,8,7)]
+gendersumm_grob <- tableGrob(t(gendersumm), theme = ttheme_minimal())
+
+grid.arrange(gender_hist, gendersumm_grob, nrow = 1, widths = c(0.8, 0.2))
 ```
 
 Exploring the WHO infant mortality rate data:
 
-```{r infantmortplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
+```{r infantmortplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 infantmort_hist <- ggplot(data = alldata, aes(x = infantmort)) + 
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$gendereq))))) +
   xlab("Probability of Infant Mortality") +
   ylab("Count") +
   ggtitle("Infant Mortality Distribution")
-infantmort_hist
+
+infantmortsumm <- broom::tidy(round(summary(alldata$infantmort), digits = 3))
+sd <- round(sd(alldata$infantmort, na.rm = TRUE), digits = 3)
+infantmortsumm <- cbind(infantmortsumm, sd)
+colnames(infantmortsumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+infantmortsumm <- infantmortsumm[c(1:6,8,7)]
+infantmortsumm_grob <- tableGrob(t(infantmortsumm), theme = ttheme_minimal())
+
+grid.arrange(infantmort_hist, infantmortsumm_grob, nrow = 1, widths = c(0.8, 0.2))
 ```
 
 Exploring the WHO life expectancy data:
@@ -972,14 +1042,41 @@ lifeexp_sixty_box <- ggplot(data = alldata, aes(y = 60 + sixty_MF)) +
         axis.ticks.y = element_blank(),
         axis.line.y.left = element_blank())
 
-grid.arrange(lifeexp_birth_box, lifeexp_sixty_box, nrow = 1,
+
+birth_MFsumm <- broom::tidy(round(summary(alldata$birth_MF), digits = 3))
+sd <- round(sd(alldata$birth_MF), digits = 3)
+birth_MFsumm <- cbind(birth_MFsumm, sd)
+colnames(birth_MFsumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "SD")
+birth_MFsumm_grob <- tableGrob(birth_MFsumm, theme = ttheme_minimal(), rows = NULL)
+
+
+birth_MFsumm <- broom::tidy(round(summary(alldata$birth_MF), digits = 3))
+sd <- round(sd(alldata$birth_MF, na.rm = TRUE), digits = 3)
+birth_MFsumm <- cbind(birth_MFsumm, sd)
+colnames(birth_MFsumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+birth_MFsumm <- birth_MFsumm[c(1:6,8,7)]
+birth_MFsumm_grob <- tableGrob(birth_MFsumm, theme = ttheme_minimal(), rows = NULL)
+
+
+sixty_MFsumm <- broom::tidy(round(summary(alldata$sixty_MF + 60), digits = 3))
+sd <- round(sd(alldata$sixty_MF + 60, na.rm = TRUE), digits = 3)
+sixty_MFsumm <- cbind(sixty_MFsumm, sd)
+colnames(sixty_MFsumm) <- c("Min", "Q1", "Median", "Mean", "Q3", "Max", "NA", "SD")
+sixty_MFsumm <- sixty_MFsumm[c(1:6,8,7)]
+sixty_MFsumm_grob <- tableGrob(sixty_MFsumm, theme = ttheme_minimal(), rows = NULL)
+
+
+grid.arrange(lifeexp_birth_box, lifeexp_sixty_box, 
+             birth_MFsumm_grob, sixty_MFsumm_grob, 
+             nrow = 2, heights = c(0.8, 0.2),
              top = textGrob("Total Life Expectancy...",
-                            gp = gpar(fontsize = 16, fontface = "bold", col = "#545454")))
+                            gp = gpar(fontsize = 14, fontface = "bold", col = "#545454"),
+                            x = 0.025, hjust = 0))
 ```
 
 Investigating pairwise relationships between continuous variables:
 
-```{r calc_corrplot, include = TRUE, echo = TRUE, message = FALSE, warning = FALSE, fig.width = 10, fig.height = 8}
+```{r calc_corrplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 8}
 alldata <- alldata %>% mutate(logGDP = log(GDP_USD_2018))
 
 corrplot <- ggpairs(data = alldata, columns = c(5, 15, 8, 10:14),
@@ -995,7 +1092,7 @@ Since the goal of this analysis is to compare countries with particular focus on
 
 First, the top and bottom 20 countries were compared by Social Progress Index:
 
-```{r SPI_country_out, include = TRUE, echo = TRUE, fig.height = 6, fig.width = 6}
+```{r SPI_country_out, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 6, fig.width = 6}
 SPI_country_point
 ```
 
@@ -1248,7 +1345,7 @@ kmdf <- function(data, x, y, z){
 
 Clustering social progress versus log GDP:
 
-```{r kmeans_SPI_GDP, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
+```{r kmeans_SPI_GDP, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6}
 kmdata <- kmdf(clusterdata, "country", "SPI", "logGDP")
 
 set.seed(19811221)
@@ -1267,7 +1364,9 @@ km_SPI_GDP_plot <- ggplot(data = clusterdata1,
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
   scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
-  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   xlab("log(GDP) ($US 2018)") +
   ylab("Social Progress Index") +
   ggtitle("Cluster Analysis, Social Progress Index vs. GDP")
@@ -1294,7 +1393,9 @@ km_SPI_happiness_plot <- ggplot(data = clusterdata1,
   ylim(0, 100) +
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
-  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   xlab("World Happiness Score") +
   ylab("Social Progress Index") +
   ggtitle("Cluster Analysis, Social Progress Index vs. World Happiness Score")
@@ -1321,7 +1422,9 @@ km_SPI_gender_plot <- ggplot(data = clusterdata1,
   ylim(0, 100) +
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
-  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   xlab("Gender Equality Index") +
   ylab("Social Progress Index") +
   ggtitle("Cluster Analysis, Social Progress Index vs. Gender Equality Index")
@@ -1348,7 +1451,9 @@ km_SPI_infantmort_plot <- ggplot(data = clusterdata1,
   ylim(0, 100) +
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
-  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE)) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   xlab("Infant Mortality Rate") +
   ylab("Social Progress Index") +
   ggtitle("Cluster Analysis, Social Progress Index vs. Infant Mortality Rate")
@@ -1399,7 +1504,9 @@ km_SPI_sixty_MF_plot <- ggplot(data = clusterdata1,
   ylim(0, 100) +
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
-  guides(color = FALSE, size = FALSE, shape = guide_legend(reverse = TRUE, nrow = 1)) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   theme(legend.position = "bottom") +
   xlab("Total Life Expectancy at Age Sixty (years)") +
   ylab("Social Progress Index") +
