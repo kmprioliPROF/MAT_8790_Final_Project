@@ -17,12 +17,34 @@ wes <- wes_palette("Darjeeling1", 5, type = "discrete")    # Establishing color 
 clusterdata <- read_csv("www/clusterdata_2018-12-09.csv")  # Establishing dataset
 clusterdata <- clusterdata %>% 
   select(-GDP_USD_2018) %>% 
-  select(country, US, color, HDI_cat, SPI, HDIrank, HDIindex, happiness, genderequality_index, 
-         infantmort, birth_MF, sixty_MF, logGDP) %>% 
+  select(country, 
+         US, 
+         color, 
+         HDI_cat, 
+         SPI, 
+         HDIrank, 
+         HDIindex, 
+         happiness, 
+         genderequality_index, 
+         infantmort, 
+         birth_MF, 
+         sixty_MF, 
+         logGDP) %>% 
+  mutate(sixty_MF = sixty_MF + 60) %>% 
+  rename(`Social Progress Index` = SPI,
+         `Human Development Index Rank` = HDIrank,
+         `Human Development Index` = HDIindex,
+         `Happiness Score` = happiness,
+         `Gender Equality Index` = genderequality_index,
+         `Infant Mortality Rate` = infantmort,
+         `Total Life Expectancy at Birth` = birth_MF,
+         `Total Life Expectancy at Sixty` = sixty_MF,
+         `Gross Domestic Product (log-transformed)` = logGDP) %>% 
   mutate(US_size = case_when(
     US == "US" ~ 6,
     TRUE       ~ 3
-  ))
+  )) %>% 
+  mutate(HDI_cat = factor(HDI_cat, levels = c("Low", "Medium", "High", "Very High")))
 
 set.seed(19811221)                                         # Ensuring stable performance
 
@@ -37,7 +59,7 @@ ui <- fluidPage(
   fluidRow(
     sidebarLayout(
       sidebarPanel(
-        "To perform a sensitivity analysis on the Quality of Life clustering results, choose the variables of interest and number of clusters below.  The default cluster number is 4, consistent with the base case analysis.  This app supports up to 5 clusters.",
+        "To perform a sensitivity analysis on the Quality of Life clustering results, choose the variables of interest and number of clusters below.  The default cluster number is 4, consistent with the base case analysis.  This model supports up to 5 clusters.",
         br(), br(),
         selectInput(inputId = "xcol",
                     label = "x Variable",
@@ -88,7 +110,7 @@ server <- function(input, output, session) {
       geom_point(size = clusterdata$US_size) +
       scale_color_manual(values = wes) +
       scale_shape_manual(values = c(18, 17, 15, 16)) +
-      guides(size = FALSE, shape = guide_legend(title = "HDI Category"), 
+      guides(size = FALSE, shape = guide_legend(reverse = TRUE, title = "HDI Category"), 
              color = guide_legend(title = "Cluster")) +
       xlab(paste(input$xcol)) +
       ylab(paste(input$ycol)) +
