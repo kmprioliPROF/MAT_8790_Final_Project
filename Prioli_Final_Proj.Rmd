@@ -125,14 +125,14 @@ abstract: "Example abstract text"
 ---
 
 <!-- Notes
-  * Do a sensitivity analysis on cluster number (shiny?)
-  * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
+  * Change example wrangle dataset to a simpler one (HDI takes up too much room in output)
   * Need to better organize flow of report (some results are in Methods, etc)
   * Need to more fully narrate steps and interpretations of output
   * Ensure uniform ordering of table contents, output, references
-  
+  * Do a sensitivity analysis on cluster number via shiny
+     * Clustering:  in Shiny app, write code to display "The United States is in " _fill in the blank_ "cluster"
+     * Results of SA - OK to just describe Shiny results, and provide URL
   * Limitations:
-  
 
   -->
 
@@ -207,7 +207,7 @@ Each country-level datafile was imported, wrangled as needed, then tested agains
 
 At least one univariate visualization was generated for each variable in `alldata` via `ggplot()`, and a correlation matrix was produced to investigate pairwise relationshps between continuous variables.  Next, a series of ordered country-as-factor bivariate visualizations were created to explore the top and bottom 20 countries by ranking within each variable.
 
-### *k-Means Clustering*
+### *K-Means Clustering*
 
 To assess how the United States compares to the rest of the world, a series of *k*-means cluster analyses was carried out.  *K*-means clustering is described elsewhere; briefly, given bivariate data and a desired number *k* groups, this classification algorithm classifies the points in the two-dimensional plane to minimize the total within-cluster variation for all clusters (@intro_stat_learn).  This is an iterative process that works by establishing *k* centroids, classifying each point by which centroid is closest, then moving the centroids to the center of their corrresponding clusters, and repeating the process.  Iteration terminates when the centroids no longer move, and the classification established in this terminal iteraton is the clustering.
 
@@ -834,13 +834,13 @@ SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI,
 
 First, exploring the Social Progress Index data:
 
-```{r SPIplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
+```{r SPIplot, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
 SPI_hist
 ```
 
 Next, exploring GDP by summary statistics:
 
-```{r GDPsumm, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
+```{r GDPsumm, include = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
 GDPsumm <- broom::tidy(round(summary(alldata$GDP_USD_2018 / 1000000), digits = 4)) %>% 
   kable(format = "markdown")
 GDPsumm
@@ -848,12 +848,12 @@ GDPsumm
 
 Taking the log transform and plotting:
 
-```{r GDPplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
+```{r GDPplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
 GDP_hist <- ggplot(data = alldata, aes(x = log(GDP_USD_2018))) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$GDP_USD_2018))))) +
   xlab("log(GDP) ($US 2018)") +
   ylab("Count") +
-  ggtitle("Gross Domestic Product Distribution, Log Transform") +
+  ggtitle("Gross Domestic Product Distribution, \nLog Transform") +
   scale_x_continuous(labels = scales::dollar_format(prefix = "$"))
 GDP_hist
 ```
@@ -880,7 +880,7 @@ grid.arrange(HDIindex_hist, HDIcat_bar, nrow = 1)
 
 Exploring the World Happiness Report data:
 
-```{r happinessplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
+```{r happinessplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
 happiness_hist <- ggplot(data = alldata, aes(happiness)) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$happiness))))) +
   xlab("Happiness Score") +
@@ -891,7 +891,7 @@ happiness_hist
 
 Exploring the gender equality index data:
 
-```{r genderplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
+```{r genderplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
 gender_hist <- ggplot(data = alldata, aes(x = genderequality_index)) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$genderequality_index))))) +
   xlab("Gender Equality Index") +
@@ -902,7 +902,7 @@ gender_hist
 
 Exploring the WHO infant mortality rate data:
 
-```{r infantmortplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 4}
+```{r infantmortplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 4, fig.height = 2.5}
 infantmort_hist <- ggplot(data = alldata, aes(x = infantmort)) + 
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$genderequality_index))))) +
   xlab("Probability of Infant Mortality") +

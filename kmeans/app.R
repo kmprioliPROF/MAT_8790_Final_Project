@@ -1,6 +1,6 @@
 # Katherine M. Prioli
 # MAT 8790 Final Project - k-means cluster sensitivity analysis
-# Wed Dec 05 19:20:34 2018 ------------------------------
+# Sun Dec 09 12:27:18 2018 ------------------------------
 
 
 #### Loading libraries and data ----
@@ -13,33 +13,57 @@ library(ggthemr)       # For prettifying plot framework
 
 ggthemr("fresh")       # Establishes blank plot canvas with dashed gridlines
 
-clusterdata <- read_csv("www/clusterdata.csv")             # Establishing dataset
-wes <- wes_palette("Darjeeling1", 5, type = "discrete")    # Establishing color scheme of plot (alternative FantasticFox1)
+clusterdata <- read_csv("www/clusterdata_2018-12-09.csv")  # Establishing dataset
+clusterdata <- clusterdata %>% 
+  select(-GDP_USD_2018) %>% 
+  select(country, US, color, HDI_cat, SPI, HDIrank, HDIindex, happiness, genderequality_index, 
+         infantmort, birth_MF, sixty_MF, logGDP) %>% 
+  mutate(US_size = case_when(
+    US == "US" ~ 6,
+    TRUE       ~ 3
+  ))
+wes <- wes_palette("Darjeeling1", 5, type = "discrete")    # Establishing color scheme of plot
 set.seed(19811221)                                         # Ensuring stable performance
 
 
 #### UI side code ----
 
-ui <- pageWithSidebar(
-  headerPanel("Quality of Life Analysis:  K-Means Clustering"),
-  sidebarPanel(
-    selectInput(inputId = "xcol",
-                label = "x Variable",
-                choices = names(clusterdata),
-                selected = names(clusterdata)[[10]]),
-    selectInput(inputId = "ycol",
-                label = "y Variable",
-                choices = names(clusterdata),
-                selected = names(clusterdata)[[2]]),
-    numericInput(inputId = "clusters",
-                 label = "Number of clusters", 
-                 value = 4,
-                 min = 1,
-                 max = 5)
+ui <- fluidPage(
+  titlePanel(tags$h4(span(HTML("<center>MAT 8790 Final Project </center>"), style = "color: #545454; font-weight: bold")),
+             windowTitle = "MAT 8790 Final Project - QoL K-Means Clustering Analysis"),
+  tags$h1(span(HTML("<center>Quality of Life Analysis:  K-Means Clustering </center>"), style = "color: #00A08A; font-weight: bold")),
+  br(), br(),
+  fluidRow(
+    sidebarLayout(
+      sidebarPanel(
+        "To perform a sensitivity analysis on the Quality of Life clustering results, choose the variables of interest and number of clusters below.  The default cluster number is 4, consistent with the base case analysis.  This app supports up to 5 clusters.",
+        br(), br(),
+        selectInput(inputId = "xcol",
+                    label = "x Variable",
+                    choices = names(clusterdata)[5:13],
+                    selected = names(clusterdata)[[13]]),
+        selectInput(inputId = "ycol",
+                    label = "y Variable",
+                    choices = names(clusterdata)[5:13],
+                    selected = names(clusterdata)[[5]]),
+        numericInput(inputId = "clusters",
+                     label = "Number of clusters", 
+                     value = 4,
+                     min = 1,
+                     max = 5)
+      ),
+      mainPanel(
+        plotOutput('kmeans')
+      )
+    )
   ),
-  mainPanel(
-    plotOutput('kmeans')
-  )
+  fluidRow(HTML("<center"),
+           br(), br(), br(),
+           HTML(paste("© 2018 Katherine M. Prioli.  For more information including full code, report, and data sources, visit the ",
+                      tags$a(href = "https://github.com/kmprioliPROF/MAT_8790_Final_Project", 
+                             target = "_blank", "GitHub repository"), " for this project."
+           )),
+           HTML("</center>"))
 )
 
 
@@ -56,15 +80,21 @@ server <- function(input, output, session) {
   })
   
   output$kmeans <- renderPlot({
-    # Need to add the size & shape arguments used in .Rmd
     ggplot(data = selectedData(), aes(x = selectedData()[[1]], 
                                       y = selectedData()[[2]], 
-                                      color = factor(clusters()$cluster))) +
-      geom_point(size = 3) +
+                                      color = factor(clusters()$cluster),
+                                      shape = clusterdata$HDI_cat)) +
+      geom_point(size = clusterdata$US_size) +
       scale_color_manual(values = wes) +
-      guides(color = guide_legend(title = "Cluster"))
+      scale_shape_manual(values = c(18, 17, 15, 16)) +
+      guides(size = FALSE, shape = guide_legend(title = "HDI Category"), 
+             color = guide_legend(title = "Cluster")) +
+      xlab(paste(input$xcol)) +
+      ylab(paste(input$ycol)) +
+      ggtitle("Clustering Sensitivity Analysis") + 
+      theme(plot.title = element_text(size = 18, face = "bold"))
   })
-  
 }
+
 
 shinyApp(ui = ui, server = server)
