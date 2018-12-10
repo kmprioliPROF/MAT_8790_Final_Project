@@ -41,7 +41,7 @@ clusterdata <- clusterdata %>%
          `Total Life Expectancy at Sixty` = sixty_MF,
          `Gross Domestic Product (log-transformed)` = logGDP) %>% 
   mutate(US_size = case_when(
-    US == "US" ~ 6,
+    US == "US" ~ 7,
     TRUE       ~ 3
   )) %>% 
   mutate(HDI_cat = factor(HDI_cat, levels = c("Low", "Medium", "High", "Very High")))
@@ -60,6 +60,8 @@ ui <- fluidPage(
     sidebarLayout(
       sidebarPanel(
         "To perform a sensitivity analysis on the Quality of Life clustering results, choose the variables of interest and number of clusters below.  The default cluster number is 4, consistent with the base case analysis.  This model supports up to 5 clusters.",
+        br(), br(),
+        "The United States is identified by an enlarged point for easy identification.",
         br(), br(),
         selectInput(inputId = "xcol",
                     label = "x Variable",
