@@ -183,17 +183,17 @@ Data for these measures was obtained for calendar year 2016 in `.csv` or `.xls(x
 
 ### *Wrangling and Exploration*
 
-Each country-level datafile was imported, wrangled as needed, then tested against the dataframe containing country identifiers via `anti_join()` to identify mismatches.  Mismatching country names were manually recoded for each datafile, then all datafiles were merged using serial `lef_join()` statements.  Countries with wholly missing data were excluded.  The resulting dataframe, titled `alldata`, is presented in Table 2.
+Each country-level datafile was imported, wrangled as needed, then tested against the dataframe containing country identifiers via `anti_join()` to identify mismatches.  Mismatching country names were manually recoded for each datafile, then all datafiles were merged using serial `left_join()` statements.  Countries with wholly missing data were excluded.  The resulting dataframe, titled `alldata`, is presented in Table 2.
 
 **Table 2.  `alldata` dataframe contents.**
 
 | **Source**       	              | **Variable Name**    	| **Description**                                  	|
 |-------------------------------- |----------------------	|--------------------------------------------------	|
 | @socialprog      	              | SPI                  	| Social Progress Index value (scale of 0:100)     	|
-| @worldbank_gdp   	              | GDP_USD_2018         	| 2016 Gross Domestic Product (valued in $US 2018) 	|
+| @worldbank_gdp   	              | GDP_USD_2018         	| Gross Domestic Product (valued in $US 2018)     	|
 | @un_dvlpt        	              | HDIrank              	| Human Development Index ranking                  	|
 | @un_dvlpt        	              | HDIindex             	| HDI index value (scale of 0:1)                   	|
-| @un_dvlpt        	              | HDI_cat              	| HDI index category (5 levels)                    	|
+| @un_dvlpt        	              | HDI_cat              	| HDI index category (4 levels)                    	|
 | @whr             	              | happiness            	| World Happiness Score (scale of 0:10)            	|
 | @wef_gender      	              | gendereq 	            | Gender Equality Index (scale of 0:1)             	|
 | @who_infantmort  	              | infantmort           	| Infant mortality rate                            	|
@@ -1647,9 +1647,16 @@ km_birth_MF_sixty_MF_plot
 
 ## **Discussion**
 
+<!-- To discuss:
 
+* How findings can be used
+* Future work -->
 
 ### *Limitations*
+
+
+
+### *Challenges and Surprises*
 
 
 
