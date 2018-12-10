@@ -15,9 +15,17 @@ The repo is organized as follows:
 
 | **Content**                             	| **Description**                                                    	|
 |-----------------------------------------	|--------------------------------------------------------------------	|
+| data                                      | Contains source datasets used in the analysis                       |
+| kmeans                                    | Contains source code and data for k-means clustering Shiny app      |
+| Final_Project.Rproj                       | .Rproj project container                                            |
+| Prioli_Final_Proj.Rmd                     | Notebook containing source code and report                          |
+| Prioli_Final_Proj.pdf                     | Knitted notebook                                                    |
+| Prioli_Final_Proj.pptx                    | (COMING SOON) Presentation slides                                   |
 
 
-## **Code**
+## **App**
+
+The Shiny app associated with this project is available at https://kmprioli.shinyapps.io/MAT_8790_kmeans/.
 
 
 ## **References**
