@@ -211,7 +211,7 @@ At least one univariate visualization was generated for each variable in `alldat
 
 For the variables for which the United States was not among the top 20 performing countries on country-level visualization, a series of *k*-means cluster analyses was performed.  *K*-means clustering is described elsewhere; briefly, given bivariate data and a desired number *k* of groups, this classification algorithm classifies the points in the two-dimensional plane to minimize the total within-cluster variation for all clusters (@intro_stat_learn).  This is an iterative process that works by establishing *k* centroids, classifying each point by which centroid is closest, then moving the centroids to the center of their corrresponding clusters, and repeating the process.  Iteration terminates when the centroids no longer move, and the classification established in this terminal iteraton is the clustering.
 
-The Human Development Index categorizes the world's countries into four developmental levels (low, medium, high, and very high); thus *k*-means clustering analysis was performed assuming 4 clusters.  Missing values were excluded to ensure the clustering algorithm would run, and a function was written to subset the clustering dataset (named `clusterdata`) to the variables of interest for each *k*-means analysis.  On each output plot, the United States was identified by an enlarged `geom_point()`.  A Shiny application was written to allow sensitivity analysis of the effect of varying *k*, with particular attention paid to any transitions between clusters for the United States with changing *k*.
+The Human Development Index categorizes the world's countries into four developmental levels (low, medium, high, and very high); thus *k*-means clustering analysis was performed assuming 4 clusters.  Missing values were excluded to ensure the clustering algorithm would run, and a function was written to subset the clustering dataset (named `clusterdata`) to the variables of interest for each *k*-means analysis.  On each output plot, the United States was identified by an enlarged `geom_point()`.  A Shiny application was written to allow sensitivity analysis of the effect of varying *k*, with particular attention paid to any transitions between clusters for the United States with changing *k*.  For brevity, code for the Shiny application is not provided here, but is available on the GitHub repository for this project (@kmpgit).  The application can be accessed at https://kmprioli.shinyapps.io/MAT_8790_kmeans/.
 
 
 ### *Example Code*
@@ -777,7 +777,7 @@ alldata <- joinsub %>%
     TRUE                       ~ "Non US"
   )) %>% 
   mutate(color = case_when(
-    country == "United States" ~ "red",
+    country == "United States" ~ "#FF0000",
     TRUE                       ~ "#545454"
   ))
 
@@ -831,7 +831,7 @@ colors <- alldata_SPI40$color[order(alldata_SPI40$SPI)]
 SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI, 
                                                       y = fct_reorder(country, SPI), color = US)) +
   geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlim(0, 100) +
@@ -843,37 +843,29 @@ SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI,
 Example clustering code:
 
 ```{r kmeans_example, echo = TRUE, eval = FALSE}
-kmdf <- function(data, x, y, z){
-  kmdata <- data %>% 
-    select(x, y, z)
-  kmdata <- return(kmdata)
-}
-
-kmdata <- kmdf(clusterdata, "country", "SPI", "logGDP")
+kmdata <- kmdf(clusterdata, "country", "happiness", "gendereq")
 
 set.seed(19811221)
-km_SPI_GDP <- kmeans(kmdata[, 2:3], 4)
-km_SPI_GDP_cluster <- as.factor(km_SPI_GDP$cluster)
+km_subset <- kmeans(kmdata[, 2:3], 4)
+km_subset_cluster <- as.factor(km_subset$cluster)
 
-clusterdata1 <- cbind(clusterdata, km_SPI_GDP_cluster)
+clusterdata1 <- cbind(clusterdata, km_subset_cluster)
 
-km_SPI_GDP_plot <- ggplot(data = clusterdata1, 
-                          aes(x = logGDP, y = SPI, 
-                              color = km_SPI_GDP_cluster,
-                              size = US,
-                              shape = HDI_cat)) +
+km_happiness_gendereq_plot <- ggplot(data = clusterdata1,
+                                     aes(x = happiness, y = gendereq, 
+                                         color = km_subset_cluster,
+                                         size = US,
+                                         shape = HDI_cat)) +
   geom_point() +
-  ylim(0, 100) +
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
-  scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
   guides(color = guide_legend(title = "Cluster"), 
          size = FALSE, 
          shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
-  xlab("log(GDP) ($US 2018)") +
-  ylab("Social Progress Index") +
-  ggtitle("Cluster Analysis, Social Progress Index vs. GDP")
-km_SPI_GDP_plot
+  xlab("Happiness Score") +
+  ylab("Gender Equality Index") +
+  ggtitle("Figure 16.  Cluster Analysis, Gender Equality Index vs. Happiness Score")
+km_happiness_gendereq_plot
 ```
 
 
@@ -1088,6 +1080,8 @@ corrplot <- ggpairs(data = alldata, columns = c(5, 15, 8, 10:14),
 corrplot
 ```
 
+### *Top and Bottom 20 Countries by QoL Measure*
+
 When assessing the top and bottom 20 countries by Social Progress Index, the United States was found to rank twentieth (Fig. 9).
 
 ```{r SPI_country, echo = FALSE, fig.height = 5, fig.width = 8}
@@ -1105,7 +1099,7 @@ colors <- alldata_SPI40$color[order(alldata_SPI40$SPI)]
 SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI, 
                                                       y = fct_reorder(country, SPI), color = US)) +
   geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlim(0, 100) +
@@ -1114,7 +1108,6 @@ SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI,
   ggtitle("Figure 9.  Social Progress Index by Country")
 SPI_country_point
 ```
-
 
 The United States has the world's largest GDP (Fig. 10).
 
@@ -1136,7 +1129,7 @@ GDP_country_point <- ggplot(data = alldata_GDP_40,
                                 color = US)) +
   geom_point() +
   scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlab("log(Gross Domestic Product) ($US 2018)") +
@@ -1162,7 +1155,7 @@ colors <- alldata_WHR_40$color[order(alldata_WHR_40$happiness)]
 WHR_country_point <- ggplot(data = alldata_WHR_40, 
                             aes(x = happiness, y = fct_reorder(country, happiness), color = US)) +
   geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlim(0, 10) +
@@ -1193,7 +1186,7 @@ colors <- alldata_HDI40$color[order(alldata_HDI40$HDIindex)]
 HDI_country_point <- ggplot(data = alldata_HDI40, 
                             aes(x = HDIindex, y = fct_reorder(country, HDIindex), color = US)) +
   geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlim(0, 1) +
@@ -1222,7 +1215,7 @@ gender_country_point <- ggplot(data = alldata_gender_40,
                                 y = fct_reorder(country, gendereq), 
                                 color = US)) +
   geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlim(0, 1) +
@@ -1255,7 +1248,7 @@ infantmort_country_point <- ggplot(data = alldata_infantmort_40,
                                        y = fct_reorder(country, infantmort), 
                                        color = US)) +
   geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlab("Infant Mortality Rate") +
@@ -1290,7 +1283,7 @@ birth_MF_country_point <- ggplot(data = alldata_lifeexp_birth_40,
                                 y = fct_reorder(country, birth_MF), 
                                 color = US)) +
   geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlim(0, 100) +
@@ -1313,7 +1306,7 @@ sixty_MF_country_point <- ggplot(data = alldata_lifeexp_sixty_40,
                                 y = fct_reorder(country, sixty_MF), 
                                 color = US)) +
   geom_point() +
-  scale_color_manual(values = c("US" = "red", "Non US" = "#65ADC2")) +
+  scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
   xlim(0, 100) +
@@ -1335,7 +1328,7 @@ which(alldata_lifeexp_sixty$country == "United States")
 Per the above country-level analyses, the United States was not among the top 20 performing countries for happiness, gender equality, infant mortality, and life expectancy at birth and at 60 years, thus these five fields were examined via clustering.
 
 
-### **Clustering Analysis**
+### *Clustering Analysis*
 
 Ten pairwise cluster analyses were performed assuming four clusters, shown in Table 4.
 
@@ -1369,7 +1362,7 @@ kmdf <- function(data, x, y, z){
 }
 ```
 
-When clustering 
+For Cluster Analysis #1 (Fig. 16) considering `happiness` and `gendereq`, the United States is clustered with other highly-developed nations; this remained stable when testing $k = 3$ and $k = 5$ clusters.
 
 ```{r kmeans_happiness_gendereq, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 4}
 kmdata <- kmdf(clusterdata, "country", "happiness", "gendereq")
@@ -1397,6 +1390,8 @@ km_happiness_gendereq_plot <- ggplot(data = clusterdata1,
 km_happiness_gendereq_plot
 ```
 
+Figure 17 depicts Cluster Analysis #2 for happiness score vs. infant mortality rate.  The United States is again clustered with other highly-developed nations, and remains so when testing $k = 3$ and $k = 5$ clusters.
+
 ```{r kmeans_happiness_infantmort, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 4}
 kmdata <- kmdf(clusterdata, "country", "happiness", "infantmort")
 
@@ -1423,6 +1418,7 @@ km_happiness_infantmort_plot <- ggplot(data = clusterdata1,
 km_happiness_infantmort_plot
 ```
 
+Cluster Analyses 3 and 4 (Fig. 18) compare happiness score to both life expectancy variables.  The US is clustered with other highly developed nations when considering total life expectancy at age 60, but for total life expectancy at birth, the US occupies a mixed cluster containing some countries at the "very high" development level, and some at the "high" level.  For total life expectancy at age 60, the results were stable when testing $k = 3$ and $k = 5$ clusters; however, for life expectancy at birth, the US entered the cluster dominated by "very high"-level countries at $k = 3$.
 
 ```{r kmeans_happiness_lifeexp, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 8}
 kmdata <- kmdf(clusterdata, "country", "happiness", "birth_MF")
@@ -1479,6 +1475,177 @@ grid.arrange(km_happiness_birth_MF_plot, km_happiness_sixty_MF_plot, nrow = 2,
                             gp = gpar(fontsize = 16, fontface = "bold", col = "#545454"),
                             x = 0.025, hjust = 0))
 ```
+
+Figure 19 presents Cluster Analysis #5.  The US occupies a mixed cluster including countries from all HDI categories, and this does not change with varying *k*.
+
+```{r kmeans_gendereq_infantmort, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 4}
+kmdata <- kmdf(clusterdata, "country", "gendereq", "infantmort")
+
+set.seed(19811221)
+km_subset <- kmeans(kmdata[, 2:3], 4)
+km_subset_cluster <- as.factor(km_subset$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_subset_cluster)
+
+km_gendereq_infantmort_plot <- ggplot(data = clusterdata1,
+                                     aes(x = gendereq, y = infantmort, 
+                                         color = km_subset_cluster,
+                                         size = US,
+                                         shape = HDI_cat)) +
+  geom_point() +
+  scale_color_manual(values = wes) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
+  xlab("Gender Equality Index") +
+  ylab("Infant Mortality Rate") +
+  ggtitle("Figure 19.  Cluster Analysis, Infant Mortality Rate vs. Gender Equality Index")
+km_gendereq_infantmort_plot
+```
+
+Figure 20 depicts Cluster Analyses 6 and 7, and Figure 21 shows Cluster Analyses 8 and 9.  For both of these sets of analyses, the US is differentially clustered in the same manner as described for Cluster Analyses 3 and 4, and also has the same sensitivity to changing *k* as seen in those analyses.  These results indicate that total life expectancy at birth is predictive of cluster number to some degree.
+
+```{r kmeans_gendereq_lifeexp, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 8}
+kmdata <- kmdf(clusterdata, "country", "gendereq", "birth_MF")
+
+set.seed(19811221)
+km_subset <- kmeans(kmdata[, 2:3], 4)
+km_subset_cluster <- as.factor(km_subset$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_subset_cluster)
+
+km_gendereq_birth_MF_plot <- ggplot(data = clusterdata1,
+                                     aes(x = gendereq, y = birth_MF, 
+                                         color = km_subset_cluster,
+                                         size = US,
+                                         shape = HDI_cat)) +
+  geom_point() +
+  scale_color_manual(values = wes) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  xlim(0, 1) +
+  ylim(50, 90) +
+  guides(color = FALSE, size = FALSE, shape = FALSE) +
+  xlab("Gender Equality Index") +
+  ylab("Total Life Expectancy at Birth (years)") +
+  ggtitle("...at Birth")
+
+kmdata <- kmdf(clusterdata, "country", "happiness", "sixty_MF")
+
+set.seed(19811221)
+km_subset <- kmeans(kmdata[, 2:3], 4)
+km_subset_cluster <- as.factor(km_subset$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_subset_cluster)
+
+km_gendereq_sixty_MF_plot <- ggplot(data = clusterdata1,
+                                    aes(x = gendereq, y = 60 + sixty_MF, 
+                                        color = km_subset_cluster,
+                                        size = US,
+                                        shape = HDI_cat)) +
+  geom_point() +
+  scale_color_manual(values = wes) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  xlim(0, 1) +
+  ylim(50, 90) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
+  theme(legend.position = "bottom") +
+  xlab("Gender Equality Index") +
+  ylab("Total Life Expectancy at Age 60 (years)") +
+  ggtitle("...at Age 60")
+
+grid.arrange(km_gendereq_birth_MF_plot, km_gendereq_sixty_MF_plot, nrow = 2,
+             top = textGrob("Figure 20.  Cluster Analysis, Gender Equality Index vs. Total Life Expectancy...",
+                            gp = gpar(fontsize = 16, fontface = "bold", col = "#545454"),
+                            x = 0.025, hjust = 0))
+```
+
+```{r kmeans_infantmort_lifeexp, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 8}
+kmdata <- kmdf(clusterdata, "country", "infantmort", "birth_MF")
+
+set.seed(19811221)
+km_subset <- kmeans(kmdata[, 2:3], 4)
+km_subset_cluster <- as.factor(km_subset$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_subset_cluster)
+
+km_infantmort_birth_MF_plot <- ggplot(data = clusterdata1,
+                                     aes(x = infantmort, y = birth_MF, 
+                                         color = km_subset_cluster,
+                                         size = US,
+                                         shape = HDI_cat)) +
+  geom_point() +
+  scale_color_manual(values = wes) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  xlim(0, 0.1) +
+  ylim(50, 90) +
+  guides(color = FALSE, size = FALSE, shape = FALSE) +
+  xlab("Infant Mortality Rate") +
+  ylab("Total Life Expectancy at Birth (years)") +
+  ggtitle("...at Birth")
+
+kmdata <- kmdf(clusterdata, "country", "happiness", "sixty_MF")
+
+set.seed(19811221)
+km_subset <- kmeans(kmdata[, 2:3], 4)
+km_subset_cluster <- as.factor(km_subset$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_subset_cluster)
+
+km_infantmort_sixty_MF_plot <- ggplot(data = clusterdata1,
+                                    aes(x = infantmort, y = 60 + sixty_MF, 
+                                        color = km_subset_cluster,
+                                        size = US,
+                                        shape = HDI_cat)) +
+  geom_point() +
+  scale_color_manual(values = wes) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  xlim(0, 0.1) +
+  ylim(50, 90) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
+  theme(legend.position = "bottom") +
+  xlab("Infant Mortality Rate") +
+  ylab("Total Life Expectancy at Age 60 (years)") +
+  ggtitle("...at Age 60")
+
+grid.arrange(km_infantmort_birth_MF_plot, km_infantmort_sixty_MF_plot, nrow = 2,
+             top = textGrob("Figure 21.  Cluster Analysis, Infant Mortality Rate vs. Total Life Expectancy...",
+                            gp = gpar(fontsize = 16, fontface = "bold", col = "#545454"),
+                            x = 0.025, hjust = 0))
+```
+
+Finally, Fig. 22 shows Cluster Analysis #10.  The United States is again found in a mixed cluster, containing countries in the medium, high, and very high HDI categories.  US cluster position remains unchanged for $k = 5$, but for $k = 3$, the US moves to the first cluster, containing mostly countries in the very high HDI category.
+
+```{r kmeans_birth_MF_sixty_MF, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 8, fig.height = 4}
+kmdata <- kmdf(clusterdata, "country", "birth_MF", "sixty_MF")
+
+set.seed(19811221)
+km_subset <- kmeans(kmdata[, 2:3], 4)
+km_subset_cluster <- as.factor(km_subset$cluster)
+
+clusterdata1 <- cbind(clusterdata, km_subset_cluster)
+
+km_birth_MF_sixty_MF_plot <- ggplot(data = clusterdata1,
+                                     aes(x = birth_MF, y = 60 + sixty_MF, 
+                                         color = km_subset_cluster,
+                                         size = US,
+                                         shape = HDI_cat)) +
+  geom_point() +
+  scale_color_manual(values = wes) +
+  scale_shape_manual(values = c(18, 17, 15, 16)) +
+  guides(color = guide_legend(title = "Cluster"), 
+         size = FALSE, 
+         shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
+  xlab("Total Life Expectancy at Birth (years)") +
+  ylab("Total Life Expectancy at Age 60 (years)") +
+  ggtitle("Figure 22.  Cluster Analysis, Total Life Expectancy at Age 60 vs. at Birth")
+km_birth_MF_sixty_MF_plot
+```
+
 
 
 
