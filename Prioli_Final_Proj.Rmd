@@ -1130,7 +1130,7 @@ GDP_country_point <- ggplot(data = alldata_GDP_40,
   guides(color = FALSE) +
   xlab("log(Gross Domestic Product) ($US 2018)") +
   ylab("Country") +
-  ggtitle("Figure 10.  Gross Domestic Product by Country, Log Scale")
+  ggtitle("Figure 10.  Gross Domestic Product by Country, Log Transform")
 GDP_country_point
 ```
 
@@ -1535,7 +1535,7 @@ km_subset_cluster <- as.factor(km_subset$cluster)
 clusterdata1 <- cbind(clusterdata, km_subset_cluster)
 
 km_gendereq_sixty_MF_plot <- ggplot(data = clusterdata1,
-                                    aes(x = gendereq, y = 60 + sixty_MF, 
+                                    aes(x = gendereq, y = 60 + sixty_MF,
                                         color = km_subset_cluster,
                                         size = US,
                                         shape = HDI_cat)) +
@@ -1544,8 +1544,8 @@ km_gendereq_sixty_MF_plot <- ggplot(data = clusterdata1,
   scale_shape_manual(values = c(18, 17, 15, 16)) +
   xlim(0, 1) +
   ylim(50, 90) +
-  guides(color = guide_legend(title = "Cluster"), 
-         size = FALSE, 
+  guides(color = guide_legend(title = "Cluster"),
+         size = FALSE,
          shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   theme(legend.position = "bottom") +
   xlab("Gender Equality Index") +
