@@ -121,18 +121,14 @@ references:
     year: 2013
   title: An Introduction to Statistical Learning
   publisher: Springer
-abstract: "BACKGROUND As economic globalization increases, it is important to understand how countries compare for key quality of life (QoL) measures when grouped by level of human development, and how these comparative results change by grouping approach.  In the context of recent news reports about decreasing life expectancy in the United States, it is of particular interest to compare how the United States performs against other countries of a similar developmental level.  METHODS Data for QoL measures of interest in calendar year 2016 was gathered and merged into a single country-level dataset.  Each variable was examined via descriptive statistics and univariate visualizations, and continuous variables were compared pairwise with a correlation matrix.  The top- and bottom-ranking 20 countries were determined for each QoL measure.  For those variables for which the United States was not among the 20 highest performing countries, a series of pairwise *k*-means cluster analyses were run, with a sensitivity analysis performed for number of clusters.  RESULTS The analytic dataset included 9 QoL variables.   CONCLUSION"
+abstract: "BACKGROUND As economic globalization increases, it is important to understand how countries compare for key quality of life (QoL) measures when grouped by level of human development, and how these comparative results change by grouping approach.  In the context of recent news reports about decreasing life expectancy in the United States, it is of particular interest to compare how the United States performs against other countries of a similar developmental level.  METHODS Data for QoL measures of interest in calendar year 2016 was gathered and merged into a single country-level dataset.  Each variable was examined via descriptive statistics and univariate visualizations, and continuous variables were compared pairwise with a correlation matrix.  The top- and bottom-ranking 20 countries were determined for each QoL measure.  For those variables for which the United States was not among the 20 highest performing countries, a series of pairwise *k*-means cluster analyses were run, with a sensitivity analysis performed for number of clusters.  RESULTS The analytic dataset included 9 QoL variables.  On country-level analysis, the US was not among the top 20 countries for 5 variables, yielding 10 pairwise comparisons for clustering.  Cluster analyses showed that, for the US, life expectancy at birth was most predictive of cluster position, and was most sensitive to changes in the number of clusters.   CONCLUSION Though the United States has the world's largest economy, it underperforms on several key QoL measures.  *K*-means clustering provides a powerful tool for investigating these deficits."
 ---
 
 <!-- Notes
   * Fix references in Table 1
-  * Ensure all tables and figures are numbered
   * Need to more fully narrate steps and interpretations of output
   * Ensure uniform ordering of table contents, output, references
-  * Do a sensitivity analysis on cluster number via shiny
-     * Results of SA - OK to just describe Shiny results, and provide URL
   * Limitations:
-
   -->
 
 
@@ -895,7 +891,7 @@ grid.arrange(SPI_hist, SPIsumm_grob, nrow = 1, widths = c(0.8, 0.2))
 Table 3 shows summary statistics for the raw GDP values.  These are unwieldy; however, after log transformation, the data is reasonably normally distributed, with mean `r round(mean(log(alldata$GDP_USD_2018), na.rm = TRUE), digits = 2)` and standard deviation `r round(sd(log(alldata$GDP_USD_2018), na.rm = TRUE), digits = 2)` (Fig. 2).
 
 
-**Table 3.  Summary Statistics for `GDP_USD_2018`
+**Table 3.  Summary Statistics for `GDP_USD_2018`**
 
 ```{r GDPsumm, echo = FALSE, warning = FALSE, message = FALSE}
 GDPsumm <- broom::tidy(round(summary(alldata$GDP_USD_2018), digits = 3))
