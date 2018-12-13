@@ -46,7 +46,7 @@ clusterdata <- clusterdata %>%
   )) %>% 
   mutate(HDI_cat = factor(HDI_cat, levels = c("Low", "Medium", "High", "Very High")))
 
-set.seed(19811221)                                         # Ensuring stable performance
+# set.seed(19811221)                                         # Ensuring stable performance
 
 
 #### UI side code ----
