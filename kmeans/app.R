@@ -61,13 +61,13 @@ ui <- fluidPage(
       sidebarPanel(
         "To perform a sensitivity analysis on the Quality of Life clustering results, choose the variables of interest and number of clusters below.  The default cluster number is 4, consistent with the base case analysis.  This model supports up to 5 clusters.",
         br(), br(),
-        "The United States is identified by an enlarged point for easy identification.",
+        "The United States is denoted by an enlarged point for easy identification.",
         br(), br(),
-        selectInput(inputId = "xcol",
+        selectInput(inputId = "xvar",
                     label = "x Variable",
                     choices = names(clusterdata)[5:13],
                     selected = names(clusterdata)[[8]]),
-        selectInput(inputId = "ycol",
+        selectInput(inputId = "yvar",
                     label = "y Variable",
                     choices = names(clusterdata)[5:13],
                     selected = names(clusterdata)[[9]]),
@@ -78,7 +78,7 @@ ui <- fluidPage(
                      max = 5)
       ),
       mainPanel(
-        plotOutput('kmeans')
+        plotOutput("kmeans")
       )
     )
   ),
@@ -96,7 +96,7 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   selectedData <- reactive({
-    clusterdata[, c(input$xcol, input$ycol)]
+    clusterdata[, c(input$xvar, input$yvar)]
   })
   
   clusters <- reactive({
@@ -114,8 +114,8 @@ server <- function(input, output, session) {
       scale_shape_manual(values = c(18, 17, 15, 16)) +
       guides(size = FALSE, shape = guide_legend(reverse = TRUE, title = "HDI Category"), 
              color = guide_legend(title = "Cluster")) +
-      xlab(paste(input$xcol)) +
-      ylab(paste(input$ycol)) +
+      xlab(paste(input$xvar)) +
+      ylab(paste(input$yvar)) +
       ggtitle("Clustering Sensitivity Analysis") + 
       theme(plot.title = element_text(size = 18, face = "bold"))
   })
