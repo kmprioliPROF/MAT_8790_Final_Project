@@ -121,7 +121,7 @@ references:
     year: 2013
   title: An Introduction to Statistical Learning
   publisher: Springer
-abstract: "BACKGROUND As economic globalization increases, it is important to understand how countries compare for key quality of life (QoL) measures when grouped by level of human development, and how these comparative results change by grouping approach.  In the context of recent news reports about decreasing life expectancy in the United States, it is of particular interest to compare how the United States performs against other countries of a similar developmental level.  METHODS Data for QoL measures of interest in calendar year 2016 was gathered and merged into a single country-level dataset.  Each variable was examined via descriptive statistics and univariate visualizations, and continuous variables were compared pairwise with a correlation matrix.  The top- and bottom-ranking 20 countries were determined for each QoL measure.  For those variables for which the United States was not among the 20 highest performing countries, a series of pairwise *k*-means cluster analyses were run, with a sensitivity analysis performed for number of clusters.  RESULTS The analytic dataset included 9 QoL variables.  On country-level analysis, the US was not among the top 20 countries for 5 variables, yielding 10 pairwise comparisons for clustering.  Cluster analyses showed that, for the US, life expectancy at birth was most predictive of cluster position, and was most sensitive to changes in the number of clusters.   CONCLUSION Though the United States has the world's largest economy, it underperforms on several key QoL measures.  *K*-means clustering provides a powerful tool for investigating these deficits."
+abstract: "BACKGROUND As economic globalization increases, it is important to understand how countries compare for key quality of life (QoL) measures when grouped by level of human development, and how these comparative results change by grouping approach.  In the context of recent news reports about decreasing life expectancy in the United States, it is of particular interest to compare how the United States performs against other countries of a similar developmental level.  METHODS Data for QoL measures of interest in calendar year 2016 was gathered and merged into a single country-level dataset.  Each variable was examined via descriptive statistics and univariate visualizations, and continuous variables were compared pairwise with a correlation matrix.  The top- and bottom-ranking 20 countries were determined for each QoL measure.  For those variables for which the United States was not among the 20 highest performing countries, a series of pairwise *k*-means cluster analyses were run, with a sensitivity analysis performed for number of clusters.  RESULTS The analytic dataset included 9 QoL variables.  On country-level analysis, the US was not among the top 20 countries for 5/8 (62.5%) continuous variables, yielding 10 pairwise comparisons for clustering.  Cluster analyses showed that, for the US, life expectancy at birth was most predictive of cluster position, and was most sensitive to changes in the number of clusters.   CONCLUSION Though the United States has the world's largest economy, it underperforms on several key QoL measures.  *K*-means clustering provides a powerful tool for investigating these deficits."
 ---
 
 <!-- Notes
@@ -217,7 +217,6 @@ The libraries required for this analysis were loaded as shown below.
 ```{r setup, include = TRUE, warning = FALSE, results = 'hide', echo = TRUE, message = FALSE}
 library(tidyverse)
 library(readxl)          # For importing .xls(x) datasets
-library(lazyeval)        # For renaming columns in function
 library(countrycode)     # For establishing uniform country identifiers
 library(ggthemr)         # For prettifying output
 library(gridExtra)       # For grid.arrange()
@@ -1078,7 +1077,7 @@ corrplot
 When assessing the top and bottom 20 countries by Social Progress Index, the United States was found to rank twentieth (Fig. 9).
 
 ```{r SPI_country, echo = FALSE, fig.height = 5, fig.width = 8}
-alldata_SPI <- alldata %>%
+alldata_SPI <- alldata %>% 
   filter(!is.na(SPI) == TRUE) %>% 
   arrange(desc(SPI)) %>% 
   select(SPI, country, US, color)
@@ -1164,7 +1163,7 @@ which(alldata_WHR$country == "United States")
 Per Fig. 12, the United States ranks twelfth by HDI.
 
 ```{r HDI_country, echo = FALSE, fig.height = 5, fig.width = 8}
-alldata_HDI <- alldata %>%
+alldata_HDI <- alldata %>% 
   filter(!is.na(HDIindex) == TRUE) %>% 
   arrange(desc(HDIindex)) %>% 
   select(HDIindex, country, US, color)
@@ -1213,7 +1212,7 @@ gender_country_point <- ggplot(data = alldata_gender_40,
   xlim(0, 1) +
   xlab("Gender Equality Index") +
   ylab("Country") +
-  ggtitle("Fig. 13.  Gender Equality Index by Country")
+  ggtitle("Figure 13.  Gender Equality Index by Country")
 gender_country_point
 ```
 
@@ -1429,7 +1428,7 @@ km_happiness_birth_MF_plot <- ggplot(data = clusterdata1,
   geom_point() +
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
-  xlim(0, 10) +
+  xlim(min(clusterdata1$happiness) * 0.9, max(clusterdata1$happiness) * 1.1) +
   ylim(50, 90) +
   guides(color = FALSE, size = FALSE, shape = FALSE) +
   xlab("Happiness Score") +
@@ -1452,7 +1451,7 @@ km_happiness_sixty_MF_plot <- ggplot(data = clusterdata1,
   geom_point() +
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
-  xlim(0, 10) +
+  xlim(min(clusterdata1$happiness) * 0.9, max(clusterdata1$happiness) * 1.1) +
   ylim(50, 90) +
   guides(color = guide_legend(title = "Cluster"), 
          size = FALSE, 
@@ -1515,7 +1514,7 @@ km_gendereq_birth_MF_plot <- ggplot(data = clusterdata1,
   geom_point() +
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
-  xlim(0, 1) +
+  xlim(min(clusterdata1$gendereq) * 0.9, max(clusterdata1$gendereq) * 1.1) +
   ylim(50, 90) +
   guides(color = FALSE, size = FALSE, shape = FALSE) +
   xlab("Gender Equality Index") +
@@ -1538,7 +1537,7 @@ km_gendereq_sixty_MF_plot <- ggplot(data = clusterdata1,
   geom_point() +
   scale_color_manual(values = wes) +
   scale_shape_manual(values = c(18, 17, 15, 16)) +
-  xlim(0, 1) +
+  xlim(min(clusterdata1$gendereq) * 0.9, max(clusterdata1$gendereq) * 1.1) +
   ylim(50, 90) +
   guides(color = guide_legend(title = "Cluster"),
          size = FALSE,
