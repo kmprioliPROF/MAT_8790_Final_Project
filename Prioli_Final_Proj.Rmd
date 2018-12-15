@@ -127,8 +127,6 @@ abstract: "BACKGROUND As economic globalization increases, it is important to un
 <!-- Notes
   * Fix references in Table 1
   * Need to more fully narrate steps and interpretations of output
-  * Ensure uniform ordering of table contents, output, references
-  * Limitations:
   -->
 
 
@@ -908,10 +906,9 @@ Taking the log transform and plotting:
 ```{r GDPplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 GDP_hist <- ggplot(data = alldata, aes(x = log(GDP_USD_2018))) +
   geom_histogram(bins = ceiling(sqrt(len - sum(is.na(alldata$GDP_USD_2018))))) +
-  xlab("log(GDP) ($US 2018)") +
+  xlab("log(GDP)") +
   ylab("Count") +
-  ggtitle("Figure 2.  Gross Domestic Product Distribution, Log Transform") +
-  scale_x_continuous(labels = scales::dollar_format(prefix = "$"))
+  ggtitle("Figure 2.  Gross Domestic Product Distribution, Log Transform")
 
 logGDPsumm <- broom::tidy(round(summary(log(alldata$GDP_USD_2018)), digits = 3))
 sd <- round(sd(log(alldata$GDP_USD_2018), na.rm = TRUE), digits = 3)
@@ -1071,8 +1068,8 @@ Strong negative relationships are seen between `infantmort` and `birth_MF`, betw
 ```{r calc_corrplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 8}
 alldata <- alldata %>% mutate(logGDP = log(GDP_USD_2018))
 
-corrplot <- ggpairs(data = alldata, columns = c(5, 15, 8, 10:14),
-                    title = "Figure 8.  Correlation Matrix, Continuous Variables")
+corrplot <- ggpairs(data = alldata, columns = c(5, 15, 8:14),
+                    title = "Figure 8.  Correlation Matrix")
 corrplot
 ```
 
@@ -1124,11 +1121,10 @@ GDP_country_point <- ggplot(data = alldata_GDP_40,
                                 y = fct_reorder(country, GDP_USD_2018), 
                                 color = US)) +
   geom_point() +
-  scale_x_continuous(labels = scales::dollar_format(prefix = "$")) +
   scale_color_manual(values = c("US" = "#FF0000", "Non US" = "#5BBCD6")) +
   theme(axis.text.y = element_text(color = colors)) +
   guides(color = FALSE) +
-  xlab("log(Gross Domestic Product) ($US 2018)") +
+  xlab("log(Gross Domestic Product)") +
   ylab("Country") +
   ggtitle("Figure 10.  Gross Domestic Product by Country, Log Transform")
 GDP_country_point
