@@ -1646,18 +1646,29 @@ km_birth_MF_sixty_MF_plot
 
 ## **Discussion**
 
+This study is useful in understanding some of the ways in which the United States lags behind other countries having a similar level of development.  The US has the world's largest GDP, but this study shows that quality of life measures do not necessarily correspond to national wealth.  Of the 8 continuous QoL variables considered, the United States did not appear within the top 20 performing countries for 5 (62.5%):  happiness score, gender equality index, infant mortality rate, and the two total life expectancy variables.  On clustering analysis, the US often clustered with countries of lower developmental level by HDI, particularly when considering total life expectancy at birth, and in some cases, these results remained stable when varying cluster number.  These findings help pinpoint the ways in which the US underperforms.
 
 
 ### *Limitations*
 
+There are several limitations to this study.  Missing data presented a challenge:  countries with incomplete data were omitted for the clustering analysis, reducing the dataset from $n = 205$ to $n = 111$ countries.  Several of the omitted countries were of low-to-medium developmental level, and omitting these may bias the results of the analysis.  Second, several of these variables appear interrelated.  For example, a strong correlation between `HDIindex` and `SPI` was seen in Fig. 8.  These are compound measures calculated by different agencies, and there is some intersection in the subitems they each include.  This correlation limits the usefulness of these two variables.  Finally, limiting the data to 2016 prevents the ability to perform a longitudinal analysis.  While countries in the "very high" HDI category are likely to be stable or slow-changing in QoL measures, developing countries or those with political instability may be more volatile, and these changes could be analyzed if data were present for even as short a time period as a decade.
 
 
-### *Challenges and Surprises*
+### *Surprises and Challenges*
 
+Given that clustering considered the subset of variables for which the United States did not rank within the top 20 countries, the most surprising finding is that, for some of the cluster analyses, the US was classified with other countries in the "very high" HDI category, and these findings remained stable when varying *k*.  Specific examples are gender equality index vs. happiness score (Fig. 16) and infant mortality rate vs. happiness score (Fig. 17).
+
+The major technical challenge in this study was the data wrangling step:  though not particularly difficult, it was time-consuming, and the manual country name recoding was tedious.  In an attempt to partially automate matching on country name, fuzzy matching was attempted, but performance was poor, and I was unable to find a way to fuzzy-match by varying both string length and character distance.  For example, matching the strings "Trinidad and Tobago" and "Trinidad & Tobago" would require matching with fuzzy string length (the first string is 2 characters longer than the second) whereas the strings "Cabo Verde" and "Cape Verde" would require matching with fuzzy character distance ("ca**bo**" vs. "ca**pe**").  The other challenge in this study is interpretive:  the clustering visualizations contain the relevant results, but are not intuitive to interpret.  The shapes given by the `shape` aesthetic are difficult to differentiate when using small shapes, but larger shapes obscure results due to overlapping, and it would not be appropriate to use jittering to avoid overlapping when visualizing cluster analyses.
+
+
+### *Future Directions*
+
+Future work should include bringing additional years of data into the dataset and performing a longitudinal analysis.  Additionally, since there is concern about both life expectancy and infant mortality rate in the US, relevant single-item QoL measures and epidemiological data should be incorporated to inform robust linear models aimed at predicting infant mortality rate and life expectancy.  These analyses could be useful in informing policy decisions about public health and health education.
 
 
 ## **Conclusion**
 
+Though the United States has the world's largest economy, it underperforms on several key QoL measures.  *K*-means clustering provides a powerful tool for investigating these deficits, and clustering results can help shape future research and public policy.
 
 
 ## **References**
