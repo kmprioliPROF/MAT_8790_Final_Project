@@ -215,7 +215,7 @@ The Human Development Index categorizes the world's countries into four developm
 
 ### *Example Code*
 
-For brevity, example code for wrangling, plotting, and clustering is presented here; full code is available in the GitHub repository for this report (@kmpgit).
+For brevity, example code for wrangling, plotting, and clustering is presented here; full code is available in the GitHub repository for this project (@kmpgit).
 
 The libraries required for this analysis were loaded as shown below.
 
@@ -234,7 +234,7 @@ ggthemr("fresh")                                           # Prettifying plot fr
 wes <- wes_palette("Darjeeling1", 5, type = "discrete")    # Establishing color scheme for cluster plots
 ```
 
-Code for establishing a crosswalk for country names and 3-letter codes:
+Code for establishing a crosswalk for country names and 3-letter codes is shown below.
 
 ```{r countries, include = TRUE, echo = TRUE, eval = TRUE}
 countries_full <- codelist_panel %>% 
@@ -264,7 +264,7 @@ countries <- countries_full %>%
   select(country, country3)
 ```
 
-Code for importing and wrangling each data file and standardizing country names (example shown for the Social Progress Index data):
+Code for importing and wrangling each data file and standardizing country names (example shown for the Social Progress Index data) is given below.
 
 <!-- Social Progress Index (SPI) data: -->
 
@@ -738,7 +738,7 @@ dim(GDPanti)
 rm(list = c("GDPraw", "GDPsub", "GDPcolnames", "GDPanti"))
 ```
 
-Code to combine individual data files into one dataframe and filter out countries with no data:
+Shown below is the code used to combine individual data files into one dataframe and filter out countries with no data.
 
 ```{r combine, include = TRUE, echo = TRUE, eval = TRUE}
 joindata_1 <- full_join(countries, HDIdata, by = "country")
@@ -793,7 +793,7 @@ rm(list = c("joindata_1", "joindata_2", "joindata_3", "joindata_4",
             "joindata_5", "joindata_6", "joindata_7", "joinsub"))
 ```
 
-Example code for univariate explorations:
+The following example code shows the steps taken for univariate explorations, including plotting and descriptive statistics.
 
 ```{r SPIplot_code, include = TRUE, echo = TRUE, eval = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 4}
 SPI_hist <- ggplot(data = alldata, aes(x = SPI)) +
@@ -812,7 +812,7 @@ SPIsumm_grob <- tableGrob(t(SPIsumm), theme = ttheme_minimal())
 grid.arrange(SPI_hist, SPIsumm_grob, nrow = 1, widths = c(0.8, 0.2))
 ```
 
-Example ordered country-level plot code:
+Example code for ordered country-level plots is shown below.
 
 ```{r SPI_country_code, include = TRUE, echo = TRUE, eval = FALSE, warning = FALSE, message = FALSE, fig.height = 6, fig.width = 8}
 alldata_SPI <- alldata %>%
@@ -838,7 +838,7 @@ SPI_country_point <- ggplot(data = alldata_SPI40, aes(x = SPI,
   ggtitle("Figure 9.  Social Progress Index by Country")
 ```
 
-Example clustering code:
+Finally, example clustering code is presented below.
 
 ```{r kmeans_example, echo = TRUE, eval = FALSE}
 kmdata <- kmdf(clusterdata, "country", "happiness", "gendereq")
@@ -1064,11 +1064,11 @@ grid.arrange(lifeexp_birth_box, lifeexp_sixty_box,
                             x = 0.025, hjust = 0))
 ```
 
-When investigating pairwise relationships (Fig. 8), strong positive linear relationships were seen between `HDIindex` and `SPI`, `happiness`, and `birth_MF`; between `SPI` and `happiness`, `birth_MF`, and `sixty_MF`; and between `happiness` and `sixty_MF`.  Additionally, strong positive relationships that are possibly nonlinear are seen between `HDI_index` and `sixty_MF`, and between `birth_MF` and `sixty_MF`.
+When investigating pairwise relationships (Fig. 8), strong positive linear relationships were seen between `HDIindex` and `SPI`, `happiness`, and `birth_MF`; between `SPI` and `happiness`, `birth_MF`, and `sixty_MF`; and between `happiness` and `sixty_MF`.  Additionally, strong positive relationships that are possibly nonlinear were seen between `HDI_index` and `sixty_MF`, and between `birth_MF` and `sixty_MF`.
 
-Strong negative relationships are seen between `infantmort` and `birth_MF`, between `HDIindex` and `infantmort`, and between `SPI` and `infantmort`, though the latter two of these may not necessarily be linear.  A strong negative nonlinear relationship is seen between `infantmort` and `sixty_MF`.
+Strong negative relationships were seen between `infantmort` and `birth_MF`, between `HDIindex` and `infantmort`, and between `SPI` and `infantmort`, though the latter two of these may not necessarily be linear.  A strong negative nonlinear relationship was seen between `infantmort` and `sixty_MF`.
 
-Strong differences are seen by `HDI_cat` for `infantmort`, `birth_MF`, and `sixty_MF`.
+Strong differences were seen by `HDI_cat` for `infantmort`, `birth_MF`, and `sixty_MF`.
 
 ```{r calc_corrplot, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 8}
 alldata <- alldata %>% mutate(logGDP = log(GDP_USD_2018))
@@ -1222,7 +1222,7 @@ gender_country_point <- ggplot(data = alldata_gender_40,
 gender_country_point
 ```
 
-```{r gender_rank, include = TRUE, echo = TRUE}
+```{r gender_rank, include = FALSE, echo = FALSE}
 which(alldata_gender$country == "United States")
 ```
 
@@ -1254,7 +1254,7 @@ infantmort_country_point <- ggplot(data = alldata_infantmort_40,
 infantmort_country_point
 ```
 
-```{r infantmort_rank, include = TRUE, echo = TRUE}
+```{r infantmort_rank, include = FALSE, echo = FALSE}
 alldata_infantmort_asc <- alldata_infantmort %>% arrange(infantmort)
 which(alldata_infantmort_asc$country == "United States")
 ```
@@ -1317,7 +1317,7 @@ grid.arrange(birth_MF_country_point, sixty_MF_country_point, nrow = 1,
                             x = 0.025, hjust = 0))
 ```
 
-```{r lifeexp_ranks, include = TRUE, echo = TRUE}
+```{r lifeexp_ranks, include = FALSE, echo = FALSE}
 which(alldata_lifeexp_birth$country == "United States")
 which(alldata_lifeexp_sixty$country == "United States")
 ```
