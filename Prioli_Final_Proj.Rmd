@@ -121,7 +121,7 @@ references:
     year: 2013
   title: An Introduction to Statistical Learning
   publisher: Springer
-abstract: "BACKGROUND As economic globalization increases, it is important to understand how countries compare on key quality of life (QoL) measures when grouped by level of human development, and how these comparative results change by grouping approach.  In the context of recent news reports about decreasing life expectancy in the United States, it is of particular interest to understand how the United States performs compared to other countries of a similar developmental level.  METHODS Data for QoL measures of interest in calendar year 2016 was gathered and merged into a single country-level dataset.  Each variable was examined via descriptive statistics and univariate visualizations, and pairwise relationships were investigated with a correlation matrix.  The top- and bottom-ranking 20 countries were determined for each QoL measure.  For those variables for which the United States was not among the 20 highest performing countries, a series of pairwise *k*-means cluster analyses were run, with a sensitivity analysis performed on the number of clusters.  RESULTS The analytic dataset included 9 QoL variables (8 continuous, one categorical).  On country-level analysis, the US was not among the top 20 countries for 5/8 (62.5%) continuous variables, yielding 10 pairwise comparisons for clustering.  Cluster analyses showed that, for the US, life expectancy at birth was most predictive of cluster position, and was most sensitive to changes in the number of clusters.   CONCLUSION Though the United States has the world's largest economy, it underperforms on several key QoL measures.  *K*-means clustering provides a powerful tool for investigating these deficits."
+abstract: "BACKGROUND As economic globalization increases, it is important to understand how countries compare on key quality of life (QoL) measures when grouped by level of human development, and how these comparative results change by grouping approach.  In the context of recent news reports about decreasing life expectancy in the United States, it is of particular interest to understand how the United States performs compared to other countries of a similar developmental level.  METHODS Data for QoL measures of interest in calendar year 2016 was gathered and merged into a single country-level dataset.  Each variable was examined via descriptive statistics and univariate visualizations, and pairwise relationships were investigated with a correlation matrix.  The top- and bottom-ranking 20 countries were determined for each QoL measure.  For those variables for which the United States was not among the 20 highest performing countries, a series of pairwise *k*-means cluster analyses were run, with a sensitivity analysis performed on the number of clusters.  RESULTS The analytic dataset included 9 QoL variables (8 continuous, one categorical).  On country-level analysis, the US was not among the top 20 countries for 5/8 (62.5%) continuous variables, yielding 10 pairwise comparisons for clustering.  Cluster analyses showed that, for the US, life expectancy at birth was most predictive of cluster position, and was most sensitive to changes in the number of clusters.   CONCLUSION Though the United States has the world's largest economy, it underperforms on several key QoL measures.  *K*-means clustering provides a powerful tool for investigating these deficits.  These findings may help inform health-related public policy aimed at decreasing deficits in life expectancy."
 ---
 
 
@@ -761,8 +761,8 @@ joinsub <- joindata_7 %>%
       is.na(infantmort) == TRUE &
       is.na(birth_MF) == TRUE &
       is.na(sixty_MF) == TRUE &
-      is.na(GDP_USD_2018) == TRUE             ~ TRUE,
-    TRUE                                      ~ FALSE
+      is.na(GDP_USD_2018) == TRUE ~ TRUE,
+    TRUE                          ~ FALSE
   )) %>% 
   filter(exclude_flag == FALSE) %>% 
   select(-exclude_flag)
@@ -1322,12 +1322,12 @@ which(alldata_lifeexp_birth$country == "United States")
 which(alldata_lifeexp_sixty$country == "United States")
 ```
 
-Per the above country-level analyses, the United States was not among the top 20 performing countries for happiness, gender equality, infant mortality, and life expectancy at birth and at 60 years, thus these five fields were examined via clustering.
+Per the above country-level analyses, the United States was not among the top 20 performing countries for 5/8 (62.5%) of the variables assessed: happiness, gender equality, infant mortality, and life expectancy at birth and at 60 years.  These five fields were examined via clustering.
 
 
 ### *Clustering Analysis*
 
-Ten pairwise cluster analyses were performed assuming $k = 4$ clusters, shown in Table 4.
+Ten pairwise cluster analyses (CAs) were performed assuming $k = 4$ clusters, shown in Table 4.
 
 **Table 4.  Cluster Analyses Considered**
 
@@ -1383,7 +1383,7 @@ km_happiness_gendereq_plot <- ggplot(data = clusterdata1,
          shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   xlab("Happiness Score") +
   ylab("Gender Equality Index") +
-  ggtitle("Figure 16.  Cluster Analysis, Gender Equality Index vs. Happiness Score")
+  ggtitle("Figure 16.  CA #1:  Gender Equality Index vs. Happiness Score")
 km_happiness_gendereq_plot
 ```
 
@@ -1411,7 +1411,7 @@ km_happiness_infantmort_plot <- ggplot(data = clusterdata1,
          shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   xlab("Happiness Score") +
   ylab("Infant Mortality Rate") +
-  ggtitle("Figure 17.  Cluster Analysis, Infant Mortality Rate vs. Happiness Score")
+  ggtitle("Figure 17.  CA #2:  Infant Mortality Rate vs. Happiness Score")
 km_happiness_infantmort_plot
 ```
 
@@ -1468,7 +1468,7 @@ km_happiness_sixty_MF_plot <- ggplot(data = clusterdata1,
   ggtitle("...at Age 60")
 
 grid.arrange(km_happiness_birth_MF_plot, km_happiness_sixty_MF_plot, nrow = 2,
-             top = textGrob("Figure 18.  Cluster Analysis, Happiness Score vs. Total Life Expectancy...",
+             top = textGrob("Figure 18.  CA #s 3 & 4:  Happiness Score vs. Total Life Expectancy...",
                             gp = gpar(fontsize = 16, fontface = "bold", col = "#545454"),
                             x = 0.025, hjust = 0))
 ```
@@ -1497,7 +1497,7 @@ km_gendereq_infantmort_plot <- ggplot(data = clusterdata1,
          shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   xlab("Gender Equality Index") +
   ylab("Infant Mortality Rate") +
-  ggtitle("Figure 19.  Cluster Analysis, Infant Mortality Rate vs. Gender Equality Index")
+  ggtitle("Figure 19.  CA #5:  Infant Mortality Rate vs. Gender Equality Index")
 km_gendereq_infantmort_plot
 ```
 
@@ -1554,7 +1554,7 @@ km_gendereq_sixty_MF_plot <- ggplot(data = clusterdata1,
   ggtitle("...at Age 60")
 
 grid.arrange(km_gendereq_birth_MF_plot, km_gendereq_sixty_MF_plot, nrow = 2,
-             top = textGrob("Figure 20.  Cluster Analysis, Gender Equality Index vs. Total Life Expectancy...",
+             top = textGrob("Figure 20.  CA #s 6 & 7:  Gender Equality Index vs. Total Life Expectancy...",
                             gp = gpar(fontsize = 16, fontface = "bold", col = "#545454"),
                             x = 0.025, hjust = 0))
 ```
@@ -1610,7 +1610,7 @@ km_infantmort_sixty_MF_plot <- ggplot(data = clusterdata1,
   ggtitle("...at Age 60")
 
 grid.arrange(km_infantmort_birth_MF_plot, km_infantmort_sixty_MF_plot, nrow = 2,
-             top = textGrob("Figure 21.  Cluster Analysis, Infant Mortality Rate vs. Total Life Expectancy...",
+             top = textGrob("Figure 21.  CA #s 8 & 9:  Infant Mortality Rate vs. Total Life Expectancy...",
                             gp = gpar(fontsize = 16, fontface = "bold", col = "#545454"),
                             x = 0.025, hjust = 0))
 ```
@@ -1639,9 +1639,27 @@ km_birth_MF_sixty_MF_plot <- ggplot(data = clusterdata1,
          shape = guide_legend(reverse = TRUE, title = "HDI Category")) +
   xlab("Total Life Expectancy at Birth (years)") +
   ylab("Total Life Expectancy at Age 60 (years)") +
-  ggtitle("Figure 22.  Cluster Analysis, Total Life Expectancy at Age 60 vs. at Birth")
+  ggtitle("Figure 22.  CA #10:  Total Life Expectancy at Age 60 vs. at Birth")
 km_birth_MF_sixty_MF_plot
 ```
+
+Table 5 characterizes the HDI category makeup of the cluster containing the US for all 10 cluster analyses.  All CAs in which the US did not classify along with other countries in the "very high" HDI category involved the total life expectancy at birth variable, and these were sensitive to decreasing *k*.
+
+**Table 5.  Characteristics of Clusters Containing US**
+
+| **Cluster Analysis** 	| **Base Case Classification**                       	| ***k*** **= 3 Classification**          	| ***k*** **= 5 Classification** 	|
+|----------------------	|----------------------------------------------------	|-----------------------------------------	|--------------------------------	|
+| 1                    	| Primarily "very high"                              	| No change                               	| No change                      	|
+| 2                    	| Primarily "very high"                              	| No change                               	| No change                      	|
+| 3                    	| Mixed cluster:  "high" and "very high"             	| Moved to primarily  "very high" cluster 	| No change                      	|
+| 4                    	| Primarily "very high"                              	| No change                               	| No change                      	|
+| 5                    	| Primarily "very high"                              	| No change                               	| No change                      	|
+| 6                    	| Mixed cluster:   "medium", "high", and "very high" 	| Moved to primarily  "very high" cluster 	| No change                      	|
+| 7                    	| Primarily "very high"                              	| No change                               	| No change                      	|
+| 8                    	| Mixed cluster:   "high" and "very high"            	| Moved to primarily  "very high" cluster 	| No change                      	|
+| 9                    	| Primarily "very high"                              	| No change                               	| No change                      	|
+| 10                   	| Mixed cluster                                      	| Moved to primarily  "very high" cluster 	| No change                      	|
+
 
 
 ## **Discussion**
@@ -1656,7 +1674,7 @@ There are several limitations to this study.  Missing data presented a challenge
 
 ### *Surprises and Challenges*
 
-Given that clustering considered the subset of variables for which the United States did not rank within the top 20 countries, the most surprising finding is that, for some of the cluster analyses, the US was classified with other countries in the "very high" HDI category, and these findings remained stable when varying *k*.  Specific examples are gender equality index vs. happiness score (Fig. 16) and infant mortality rate vs. happiness score (Fig. 17).
+Given that clustering considered the subset of variables for which the United States did not rank within the top 20 countries, the most surprising finding is that, for some of the cluster analyses, the US was classified with other countries in the "very high" HDI category, and these findings remained stable when varying *k*.  Specific examples are gender equality index vs. happiness score (Fig. 16) and infant mortality rate vs. happiness score (Fig. 17).  An additional surprise was that, for most of the clustering analyses, the clusters were largely stratified either vertically or horizontally on bivariate plotting, indicating that classification was driven by only one of the two variables considered.  Cluster Analysis #7 was a weak exception to this pattern (Fig. 20).
 
 The major technical challenge in this study was the data wrangling step:  though not particularly difficult, it was time-consuming, and the manual country name recoding was tedious.  In an attempt to partially automate matching on country name, fuzzy matching was attempted, but performance was poor, and I was unable to find a way to fuzzy-match by varying both string length and character distance.  For example, matching the strings "Trinidad and Tobago" and "Trinidad & Tobago" would require matching with fuzzy string length (the first string is 2 characters longer than the second) whereas the strings "Cabo Verde" and "Cape Verde" would require matching with fuzzy character distance ("ca**bo**" vs. "ca**pe**").  The other challenge in this study is interpretive:  the clustering visualizations contain the relevant results, but are not intuitive to interpret.  The shapes given by the `shape` aesthetic are difficult to differentiate when using small shapes, but larger shapes obscure results due to overlapping, and it would not be appropriate to use jittering to avoid overlapping when visualizing cluster analyses.
 
